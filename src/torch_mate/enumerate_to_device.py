@@ -1,8 +1,13 @@
 from typing import Iterable
+
 import torch
 
-def enumerate_to_device(sequence: Iterable[Iterable[torch.Tensor]], device: torch.device, start=0):
-    """Enumerate an iterable and move all elements to a device. Enumerate code taken from: https://docs.python.org/3/library/functions.html#enumerate.
+
+def enumerate_to_device(sequence: Iterable[Iterable[torch.Tensor]],
+                        device: torch.device,
+                        start=0):
+    """Enumerate an iterable and move all elements to a device. Enumerate code
+    taken from: https://docs.python.org/3/library/functions.html#enumerate.
 
     Args:
         sequence (Iterable[Iterable[torch.Tensor]]): Sequence of tensor tuples to enumerate.
