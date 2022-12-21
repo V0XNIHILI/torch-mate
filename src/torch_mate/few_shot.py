@@ -22,7 +22,7 @@ def sample_n_shot_k_way(dataset: Dataset, n: int, k: int, class_size: int):
         class_size (int): Total number of examples per class in the dataset.
 
     Returns:
-        tuple[ndarray[int64], Subset]: A tuple with the indices of the k sampled classes and a subset of the dataset containing n*k examples from k classes.
+        tuple[torch.Tensor, Subset]: A tuple with the indices of the k sampled classes and a subset of the dataset containing n*k examples from k classes.
     """
 
     classes = sample_classes(dataset, k, class_size)
@@ -31,7 +31,9 @@ def sample_n_shot_k_way(dataset: Dataset, n: int, k: int, class_size: int):
     class_indices = np.array(
         [np.arange(c, c + n, 1) for c in classes * class_size]).flatten()
 
-    return classes, Subset(dataset, class_indices)
+    label_mapping = create_label_mapping(classes)
+
+    return label_mapping, Subset(dataset, class_indices)
 
 
 def split_train_test_n_shot_k_way(dataset: Dataset, n: int, k: int,
@@ -46,21 +48,23 @@ def split_train_test_n_shot_k_way(dataset: Dataset, n: int, k: int,
         test_shots (int): Number of examples per class to use for testing.
 
     Returns:
-        tuple[Subset, Subset]: A tuple containing the training and test sets.
+        tuple[torch.Tensor, Subset, Subset]: A tuple containing label mapping, the training and test sets.
     """
 
     if test_shots >= n:
         raise ValueError("test_shots must be less than n")
 
-    classes = sample_classes(dataset, k, class_size) * class_size
+    classes = sample_classes(dataset, k, class_size)
+    actual_classes_indices = classes * class_size
 
     train_class_indices = np.array(
-        [np.arange(c + n - test_shots, c + n, 1) for c in classes]).flatten()
+        [np.arange(c + n - test_shots, c + n, 1) for c in actual_classes_indices]).flatten()
     test_class_indices = np.array(
-        [np.arange(c, c + n - test_shots, 1) for c in classes]).flatten()
+        [np.arange(c, c + n - test_shots, 1) for c in actual_classes_indices]).flatten()
 
-    return Subset(dataset,
-                  train_class_indices), Subset(dataset, test_class_indices)
+    label_mapping = create_label_mapping(classes)
+
+    return label_mapping, Subset(dataset, train_class_indices), Subset(dataset, test_class_indices)
 
 
 def create_label_mapping(unique_labels: np.ndarray):
