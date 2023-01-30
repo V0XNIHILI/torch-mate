@@ -4,7 +4,7 @@ import numpy as np
 import torch
 
 
-def set_seeds(device: torch.device = 'cpu', seed=2147483647):
+def set_seeds(seed=2147483647, device: torch.device = 'cpu'):
     torch.manual_seed(seed)
     torch.cuda.manual_seed_all(seed)
     np.random.seed(seed)
