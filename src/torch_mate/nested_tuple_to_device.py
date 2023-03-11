@@ -2,6 +2,7 @@ from typing import Iterable
 
 import torch
 
+
 def nested_tuple_to_device(nested_tuple: Iterable[Iterable[torch.Tensor]],
                            device: torch.device):
     """Move all elements of a nested tuple to a device.
