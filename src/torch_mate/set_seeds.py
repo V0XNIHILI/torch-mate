@@ -1,13 +1,15 @@
-import random
-
 import os
+import random
 
 import numpy as np
 import torch
 
 
-def set_seeds(seed=2147483647, device: torch.device = 'cpu', fully_deterministic=False):
-    """Set seeds for reproducibility. Sets the Python, NumPy, and PyTorch seeds.
+def set_seeds(seed=2147483647,
+              device: torch.device = 'cpu',
+              fully_deterministic=False):
+    """Set seeds for reproducibility. Sets the Python, NumPy, and PyTorch
+    seeds.
 
     Args:
         seed (int, optional): Seed to use. Defaults to 2147483647.
