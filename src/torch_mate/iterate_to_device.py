@@ -3,24 +3,20 @@ from typing import Iterable
 import torch
 
 
-def enumerate_to_device(sequence: Iterable[Iterable[torch.Tensor]],
+def iterate_to_device(sequence: Iterable[Iterable[torch.Tensor]],
                         device: torch.device,
-                        start=0):
-    """Enumerate an iterable and move all elements to a device. Enumerate code
-    taken from: https://docs.python.org/3/library/functions.html#enumerate.
+                        non_blocking=False):
+    """Iterate over a sequence of tensor tuples and move them to the device.
 
     Args:
         sequence (Iterable[Iterable[torch.Tensor]]): Sequence of tensor tuples to enumerate.
         device (torch.device): Device to move the tensors to.
-        start (int, optional): Starting index. Defaults to 0.
+        non_blocking (bool, optional): If True and this copy is between CPU and GPU, the copy may occur asynchronously with respect to the host. For other cases, this argument has no effect. Defaults to False.
 
     Yields:
-        tuple[int, list[Tensor]: Tuple of the current index and a list of tensors moved to the device.
+        list[Tensor]: A list of tensors moved to the device.
     """
 
-    n = start
-
     for elem in sequence:
-        yield n, [e.to(device) for e in elem]
+        yield [e.to(device, non_blocking=non_blocking) for e in elem]
 
-        n += 1
