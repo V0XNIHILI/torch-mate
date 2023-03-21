@@ -6,7 +6,7 @@ import torch
 
 
 def set_seeds(seed=2147483647,
-              device: torch.device = 'cpu',
+              device: torch.device = torch.device('cpu'),
               fully_deterministic=False):
     """Set seeds for reproducibility. Sets the Python, NumPy, and PyTorch
     seeds.
