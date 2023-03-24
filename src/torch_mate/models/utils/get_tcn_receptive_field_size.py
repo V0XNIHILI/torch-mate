@@ -15,6 +15,6 @@ def get_tcn_receptive_field_size(kernel_size: int,
     """
 
     return sum([
-        dilation_exponential_base**(l - 1) * (kernel_size - 1)
+        2 * dilation_exponential_base**(l - 1) * (kernel_size - 1)
         for l in range(levels, 0, -1)
     ]) + 1
