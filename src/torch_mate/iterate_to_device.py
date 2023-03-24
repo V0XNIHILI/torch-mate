@@ -4,8 +4,8 @@ import torch
 
 
 def iterate_to_device(sequence: Iterable[Iterable[torch.Tensor]],
-                        device: torch.device,
-                        non_blocking=False):
+                      device: torch.device,
+                      non_blocking=False):
     """Iterate over a sequence of tensor tuples and move them to the device.
 
     Args:
@@ -19,4 +19,3 @@ def iterate_to_device(sequence: Iterable[Iterable[torch.Tensor]],
 
     for elem in sequence:
         yield [e.to(device, non_blocking=non_blocking) for e in elem]
-
