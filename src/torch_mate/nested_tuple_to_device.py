@@ -1,18 +1,20 @@
-from typing import Iterable
-
 import torch
 
+from torch_mate.iterate_to_device import NestedTupleOfTensors
 
-def nested_tuple_to_device(nested_tuple: Iterable[Iterable[torch.Tensor]],
-                           device: torch.device):
-    """Move all elements of a nested tuple to a device.
+def nested_tuple_to_device(item: NestedTupleOfTensors, device: torch.device, non_blocking=False):
+    """Move a (nested) tuple of tensors to the device.
 
     Args:
-        nested_tuple (Iterable[Iterable[torch.Tensor]]): Nested tuple of tensors to move.
+        item (NestedTupleOfTensors): (Nested) tuple of tensors to move.
         device (torch.device): Device to move the tensors to.
+        non_blocking (bool, optional): If True and this copy is between CPU and GPU, the copy may occur asynchronously with respect to the host. For other cases, this argument has no effect. Defaults to False.
 
     Returns:
-        tuple[tuple[Tensor]]: Nested tuple of tensors moved to the device.
+        NestedTupleOfTensors: (Nested) tuple of tensors moved to the device.
     """
 
-    return tuple(tuple(e.to(device) for e in elem) for elem in nested_tuple)
+    if type(item) is tuple:
+        return tuple(nested_tuple_to_device(e, device, non_blocking) for e in item)
+    else:
+        return item.to(device, non_blocking=non_blocking)
