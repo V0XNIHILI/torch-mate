@@ -1,6 +1,6 @@
 import torch
 
-from torch_mate.iterate_to_device import NestedTupleOfTensors
+from torch_mate.typing import NestedTupleOfTensors
 
 def nested_tuple_to_device(item: NestedTupleOfTensors, device: torch.device, non_blocking=False):
     """Move a (nested) tuple of tensors to the device.

@@ -1,12 +1,10 @@
-from typing import Iterable, Tuple, Union
+from typing import Iterable
 
 import torch
 
 from torch_mate.nested_tuple_to_device import nested_tuple_to_device
 
-TupleOfTensors = Tuple[torch.Tensor, ...]
-NestedTupleOfTensors = Union['NestedTupleOfTensors', TupleOfTensors]
-
+from torch_mate.typing import NestedTupleOfTensors
 
 def iterate_to_device(sequence: Iterable[NestedTupleOfTensors],
                         device: torch.device,
