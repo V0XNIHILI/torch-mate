@@ -14,7 +14,7 @@ def nested_tuple_to_device(item: NestedTupleOfTensors, device: torch.device, non
         NestedTupleOfTensors: (Nested) tuple of tensors moved to the device.
     """
 
-    if type(item) is tuple:
+    if type(item) is tuple or type(item) is list:
         return tuple(nested_tuple_to_device(e, device, non_blocking) for e in item)
     else:
         return item.to(device, non_blocking=non_blocking)
