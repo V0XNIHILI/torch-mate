@@ -154,8 +154,8 @@ def get_max_buffer_size(kernel_size: int, num_layers: int) -> int:
 if __name__ == "__main__":
     import matplotlib.pyplot as plt
 
-    k = 5
-    total_layers = 30
+    k = 3
+    total_layers = 4
 
     # Plot for kernel size 5 and levels 1 to 30 (inclusive) the buffer size on the y-axis with the receptive field size on the x-axis.
     X, y = zip(*[(get_receptive_field_size(k, l, 2), get_max_buffer_size(k, 2*l)) for l in range(1, total_layers)])
