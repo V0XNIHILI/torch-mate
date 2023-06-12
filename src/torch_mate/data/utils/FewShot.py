@@ -2,7 +2,7 @@ from typing import Callable, List, Optional
 
 import numpy as np
 import torch
-from torch.utils.data import Dataset, IterableDataset
+from torch.utils.data import Dataset, IterableDataset, BatchSampler, SequentialSampler
 
 from torch_mate.data.samplers import InfiniteClassSampler
 
@@ -16,7 +16,8 @@ def get_indices_per_class(dataset: Dataset) -> List[List[int]]:
 
         indices_per_class[label].append(i)
 
-    return list(indices_per_class.values())
+    # Sort dict by key and return a list of the values
+    return [indices_per_class[key] for key in sorted(indices_per_class.keys())]
 
 
 class FewShot(IterableDataset):
@@ -26,6 +27,7 @@ class FewShot(IterableDataset):
                  n_way: int,
                  k_shot: int,
                  query_shots: int,
+                 incremental: bool = False,
                  always_include_classes: Optional[List[int]] = None,
                  transform: Optional[Callable] = None,
                  per_class_transform: Optional[Callable] = None):
@@ -36,6 +38,7 @@ class FewShot(IterableDataset):
             dataset (Dataset): The dataset to use. Labels should be integers.
             n_way (int): Number of classes per batch.
             k_shot (int): Number of samples per class in the support set.
+            incremental (bool, optional): Whether to incrementally sample classes. Defaults to False.
             query_shots (int): Number of samples per class in the query set.
             always_include_classes (Optional[List[int]], optional): List of classes to always include in the batch. Defaults to None.
             transform (Optional[Callable], optional): Transform applied to every data sample. Will be reapplied every time a batch is servedd. Defaults to None.
@@ -54,8 +57,11 @@ class FewShot(IterableDataset):
         self.transform = transform
         self.per_class_transform = per_class_transform
 
-        self.class_sampler = iter(
-            InfiniteClassSampler(len(self.indices_per_class), self.n_way))
+        if incremental:
+            self.class_sampler = BatchSampler(SequentialSampler(range(len(self.indices_per_class))), batch_size=self.n_way, drop_last=True)
+        else:
+            self.class_sampler = iter(
+                InfiniteClassSampler(len(self.indices_per_class), self.n_way))
 
     def __iter__(self):
         """Get a batch of samples for a k-shot n-way task.
@@ -64,14 +70,12 @@ class FewShot(IterableDataset):
             tuple[tuple[Tensor, Tensor], tuple[Tensor, Tensor]]: The support and query sets in the form of ((X_support, X_query), (y_support, y_query))
         """
 
-        while True:
+        for class_indices in (self.class_sampler):
             X_train_samples = []
             X_test_samples = []
 
             y_train_samples = []
             y_test_samples = []
-
-            class_indices = next(self.class_sampler)
 
             if self.always_include_classes is not None:
                 class_indices = list(
