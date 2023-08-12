@@ -11,6 +11,9 @@ def get_indices_per_class(dataset: Dataset) -> List[List[int]]:
     indices_per_class = {}
 
     for i, (_, label) in enumerate(dataset):
+        if not isinstance(label, int):
+            label = label.item()
+
         if label not in indices_per_class:
             indices_per_class[label] = []
 
@@ -36,7 +39,7 @@ class FewShot(IterableDataset):
         samples.
 
         Args:
-            dataset (Dataset): The dataset to use. Labels should be integers.
+            dataset (Dataset): The dataset to use. Labels should be integers or torch Scalars.
             n_way (int): Number of classes per batch.
             k_shot (int): Number of samples per class in the support set.
             incremental (bool, optional): Whether to incrementally sample classes. Defaults to False.
@@ -74,6 +77,8 @@ class FewShot(IterableDataset):
         self.transform = transform
         self.per_class_transform = per_class_transform
 
+        self.cumulative = cumulative
+
         total_classes = len(self.indices_per_class)
 
         if incremental:
@@ -99,7 +104,7 @@ class FewShot(IterableDataset):
 
             class_indices = new_class_indices + cumulative_classes
 
-            if cumulative:
+            if self.cumulative:
                 cumulative_classes.extend(new_class_indices)
 
             if self.always_include_classes is not None:
