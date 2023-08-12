@@ -28,7 +28,7 @@ class SPEECHCOMMANDS_35C(Dataset):
         all_metadata = [self.dataset.get_metadata(n) for n in range(len(self))]
         self.labels = sorted(list(set([m[2] for m in all_metadata])))
 
-    def label_to_index(self, word: str) -> int:
+    def _label_to_index(self, word: str) -> int:
         return torch.tensor(self.labels.index(word))
 
     def __getitem__(self, n: int):
@@ -37,7 +37,7 @@ class SPEECHCOMMANDS_35C(Dataset):
         if self.transform:
             waveform = self.transform(waveform)
 
-        return waveform, self.label_to_index(label)
+        return waveform, self._label_to_index(label)
     
     def get_metadata(self, n: int) -> str:
         return self.dataset.get_metadata(n)
