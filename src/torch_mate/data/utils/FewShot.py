@@ -77,11 +77,12 @@ class FewShot(IterableDataset):
         self.transform = transform
         self.per_class_transform = per_class_transform
 
+        self.incremental = incremental
         self.cumulative = cumulative
 
         total_classes = len(self.indices_per_class)
 
-        if incremental:
+        if self.incremental:
             self.class_sampler = BatchSampler(SequentialSampler(range(total_classes)), batch_size=self.n_way, drop_last=True)
         else:
             self.class_sampler = InfiniteClassSampler(total_classes, self.n_way)
@@ -127,13 +128,15 @@ class FewShot(IterableDataset):
                 if self.per_class_transform is not None:
                     class_samples = self.per_class_transform(class_samples)
 
+                class_index = i if not self.incremental else cls
+
                 # Only in the case of cumulative we need to make sure that we only
                 # include the new classes in the support set and not the previous classes
                 if i < self.n_way:
-                    y_train_samples.extend([i] * self.k_shot)
+                    y_train_samples.extend([class_index] * self.k_shot)
                     X_train_samples.extend(class_samples[:self.k_shot])
 
-                y_test_samples.extend([i] * self.query_shots)
+                y_test_samples.extend([class_index] * self.query_shots)
                 X_test_samples.extend(class_samples[self.k_shot:])
 
             X_samples = torch.stack(X_train_samples + X_test_samples)
