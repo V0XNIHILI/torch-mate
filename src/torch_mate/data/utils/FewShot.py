@@ -143,6 +143,11 @@ class FewShot(IterableDataset):
 
         cumulative_classes = []
 
+        if self.incremental:
+            class_mapping = np.random.permutation(total_classes)
+        else:
+            class_mapping = np.arange(total_classes)
+
         # Change the way and shots for the first iteration
         if self.first_iter_ways_shots:
             n_way, k_shot = self.first_iter_ways_shots
@@ -158,6 +163,8 @@ class FewShot(IterableDataset):
 
             y_train_samples = []
             y_test_samples = []
+
+            new_class_indices = class_mapping[new_class_indices]
 
             # Add the first iteration way count to the class indexes to make the negative first iteration indices positive
             new_class_indices = list(np.array(new_class_indices) + self.first_iter_ways_shots[0]) if self.first_iter_ways_shots else new_class_indices
