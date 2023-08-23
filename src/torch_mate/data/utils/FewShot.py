@@ -112,7 +112,7 @@ class FewShot(IterableDataset):
         self.incremental = incremental
         self.cumulative = cumulative
 
-        total_classes = len(self.indices_per_class)
+        self.total_classes = len(self.indices_per_class)
 
         if self.incremental:
             first_iter_classes = 0
@@ -128,11 +128,11 @@ class FewShot(IterableDataset):
                 # is negative to avoid overlap.
                 first_iter = [list(range(-first_iter_classes, 0))]
 
-            end = total_classes
+            end = self.total_classes
 
-            self.class_sampler = chain(first_iter, BatchSampler(SequentialSampler(range(total_classes - first_iter_classes)), batch_size=self.n_way, drop_last=True))
+            self.class_sampler = chain(first_iter, BatchSampler(SequentialSampler(range(self.total_classes - first_iter_classes)), batch_size=self.n_way, drop_last=True))
         else:
-            self.class_sampler = InfiniteClassSampler(total_classes, self.n_way)
+            self.class_sampler = InfiniteClassSampler(self.total_classes, self.n_way)
 
     def __iter__(self):
         """Get a batch of samples for a k-shot n-way task.
@@ -144,9 +144,9 @@ class FewShot(IterableDataset):
         cumulative_classes = []
 
         if self.incremental:
-            class_mapping = np.random.permutation(total_classes)
+            class_mapping = np.random.permutation(self.total_classes)
         else:
-            class_mapping = np.arange(total_classes)
+            class_mapping = np.arange(self.total_classes)
 
         # Change the way and shots for the first iteration
         if self.first_iter_ways_shots:
