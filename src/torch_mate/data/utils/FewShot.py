@@ -9,17 +9,22 @@ from torch.utils.data import Dataset, IterableDataset, BatchSampler, SequentialS
 from torch_mate.data.samplers import InfiniteClassSampler
 
 
-def get_indices_per_class(dataset: Dataset, support_query_split: Optional[Tuple[int, int]] = None) -> List[Union[List[int], Tuple[List[int], List[int]]]]:
+def get_indices_per_class(dataset: Dataset, support_query_split: Optional[Tuple[int, int]] = None, samples_per_class: Optional[int] = None) -> List[Union[List[int], Tuple[List[int], List[int]]]]:
     indices_per_class = {}
 
-    for i, (_, label) in enumerate(dataset):
-        if not isinstance(label, int):
-            label = label.item()
+    if not samples_per_class:
+        for i, (_, label) in enumerate(dataset):
+            if not isinstance(label, int):
+                label = label.item()
 
-        if label not in indices_per_class:
-            indices_per_class[label] = []
+            if label not in indices_per_class:
+                indices_per_class[label] = []
 
-        indices_per_class[label].append(i)
+            indices_per_class[label].append(i)
+    else:
+        for i in range(len(dataset) // samples_per_class):
+            _, label = dataset[i*samples_per_class]
+            indices_per_class[label] = list(range(i * samples_per_class, (i + 1) * samples_per_class))
 
     if support_query_split is not None:
         n_support, n_query = support_query_split
@@ -43,6 +48,7 @@ class FewShot(IterableDataset):
                  incremental: bool = False,
                  cumulative: bool = False,
                  always_include_classes: Optional[List[int]] = None,
+                 samples_per_class: Optional[int] = None,
                  transform: Optional[Callable] = None,
                  per_class_transform: Optional[Callable] = None):
         """Dataset for few shot learning.
@@ -70,6 +76,7 @@ class FewShot(IterableDataset):
             incremental (bool, optional): Whether to incrementally sample classes. Defaults to False.
             cumulative (bool, optional): Whether to increase the query set size with each iteration. This flag will only work when incremental is set to True. Defaults to False.
             always_include_classes (Optional[List[int]], optional): List of classes to always include in the batch, both in the support and query set. Defaults to None.
+            samples_per_class (Optional[int], optional): Number of samples per class to use. Can be used for large datasets where the classes are ordered. Defaults to None.
             transform (Optional[Callable], optional): Transform applied to every data sample. Will be reapplied every time a batch is served. Defaults to None.
             per_class_transform (Optional[Callable], optional): Transform applied to every data sample. Will only be applied once per class. Defaults to None.
         """
@@ -96,7 +103,7 @@ class FewShot(IterableDataset):
 
         self.dataset = dataset
         self.support_query_split = support_query_split
-        self.indices_per_class = get_indices_per_class(self.dataset, self.support_query_split)
+        self.indices_per_class = get_indices_per_class(self.dataset, self.support_query_split, samples_per_class)
 
         self.n_way = n_way
         self.k_shot = k_shot
