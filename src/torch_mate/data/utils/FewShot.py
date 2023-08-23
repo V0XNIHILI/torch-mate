@@ -155,14 +155,14 @@ class FewShot(IterableDataset):
         else:
             class_mapping = np.arange(self.total_classes)
 
+        query_shots = self.query_shots
+
         # Change the way and shots for the first iteration
         if self.first_iter_ways_shots:
             n_way, k_shot = self.first_iter_ways_shots
-            query_shots = k_shot
         else:
             n_way = self.n_way
             k_shot = self.k_shot
-            query_shots = self.query_shots
 
         for new_class_indices in self.get_class_sampler():
             X_train_samples = []
@@ -220,7 +220,7 @@ class FewShot(IterableDataset):
             if self.transform is not None:
                 X_samples = self.transform(X_samples)
 
-            num_train_samples = len(class_indices) * k_shot
+            num_train_samples = len(y_train_samples)
             X_train_samples = X_samples[:num_train_samples]
             X_test_samples = X_samples[num_train_samples:]
 
