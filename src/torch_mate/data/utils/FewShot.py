@@ -76,7 +76,7 @@ class FewShot(IterableDataset):
             incremental (bool, optional): Whether to incrementally sample classes. Defaults to False.
             cumulative (bool, optional): Whether to increase the query set size with each iteration. This flag will only work when incremental is set to True. Defaults to False.
             always_include_classes (Optional[List[int]], optional): List of classes to always include in the batch, both in the support and query set. Defaults to None.
-            samples_per_class (Optional[int], optional): Number of samples per class to use. Can be used for large datasets where the classes are ordered. Defaults to None.
+            samples_per_class (Optional[int], optional): Number of samples per class to use. Can be used for large datasets where the classes are ordered to avoid iterating over the whole dataset. Defaults to None.s
             transform (Optional[Callable], optional): Transform applied to every data sample. Will be reapplied every time a batch is served. Defaults to None.
             per_class_transform (Optional[Callable], optional): Transform applied to every data sample. Will only be applied once per class. Defaults to None.
         """
@@ -137,9 +137,9 @@ class FewShot(IterableDataset):
 
             end = self.total_classes
 
-            self.class_sampler = chain(first_iter, BatchSampler(SequentialSampler(range(self.total_classes - first_iter_classes)), batch_size=self.n_way, drop_last=True))
+            self.get_class_sampler = lambda: chain(first_iter, BatchSampler(SequentialSampler(range(self.total_classes - first_iter_classes)), batch_size=self.n_way, drop_last=True))
         else:
-            self.class_sampler = InfiniteClassSampler(self.total_classes, self.n_way)
+            self.get_class_sampler = lambda: InfiniteClassSampler(self.total_classes, self.n_way)
 
     def __iter__(self):
         """Get a batch of samples for a k-shot n-way task.
@@ -164,22 +164,22 @@ class FewShot(IterableDataset):
             k_shot = self.k_shot
             query_shots = self.query_shots
 
-        for new_class_indices in self.class_sampler:
+        for new_class_indices in self.get_class_sampler():
             X_train_samples = []
             X_test_samples = []
 
             y_train_samples = []
             y_test_samples = []
 
-            new_class_indices = class_mapping[new_class_indices]
-
             # Add the first iteration way count to the class indexes to make the negative first iteration indices positive
-            new_class_indices = list(np.array(new_class_indices) + self.first_iter_ways_shots[0]) if self.first_iter_ways_shots else new_class_indices
+            offset_new_class_indices = list(np.array(new_class_indices) + self.first_iter_ways_shots[0]) if self.first_iter_ways_shots else new_class_indices
 
-            class_indices = new_class_indices + cumulative_classes
+            mapped_new_class_indices = list(class_mapping[offset_new_class_indices])
+
+            class_indices = mapped_new_class_indices + cumulative_classes
 
             if self.cumulative:
-                cumulative_classes.extend(new_class_indices)
+                cumulative_classes.extend(mapped_new_class_indices)
 
             if self.always_include_classes is not None:
                 # This line also makes sure that the always include classes are always
@@ -189,12 +189,12 @@ class FewShot(IterableDataset):
                 )[:len(class_indices) - len(self.always_include_classes
                                             )] + self.always_include_classes
 
-            for i, cls in enumerate(class_indices):
+            for i, class_index in enumerate(class_indices):
                 if self.support_query_split:
-                    within_class_indices = np.concatenate([np.random.choice(self.indices_per_class[cls][j], shot, replace=False) for j, shot in [(0, k_shot), (1, query_shots)]])
+                    within_class_indices = np.concatenate([np.random.choice(self.indices_per_class[class_index][j], shot, replace=False) for j, shot in [(0, k_shot), (1, query_shots)]])
                 else:
                     within_class_indices = np.random.choice(
-                        self.indices_per_class[cls],
+                        self.indices_per_class[class_index],
                         k_shot + query_shots,
                         replace=False)
 
@@ -204,15 +204,15 @@ class FewShot(IterableDataset):
                 if self.per_class_transform is not None:
                     class_samples = self.per_class_transform(class_samples)
 
-                class_index = i if not self.incremental else cls
+                local_class_index = i if not self.incremental else class_index
 
                 # Only in the case of cumulative we need to make sure that we only
                 # include the new classes in the support set and not the previous classes
                 if i < n_way:
-                    y_train_samples.extend([class_index] * k_shot)
+                    y_train_samples.extend([local_class_index] * k_shot)
                     X_train_samples.extend(class_samples[:k_shot])
 
-                y_test_samples.extend([class_index] * query_shots)
+                y_test_samples.extend([local_class_index] * query_shots)
                 X_test_samples.extend(class_samples[k_shot:])
 
             X_samples = torch.stack(X_train_samples + X_test_samples)
