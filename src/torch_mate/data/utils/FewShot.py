@@ -135,9 +135,9 @@ class FewShot(IterableDataset):
 
             classes_to_sample_from = list(set(list(range(self.total_classes))) - set(self.always_include_query_classes))
 
-            self.get_class_sampler = BatchSampler(RandomSampler(classes_to_sample_from, replacement=False), batch_size=self.n_way, drop_last=True)
+            self.class_sampler = BatchSampler(RandomSampler(classes_to_sample_from, replacement=False), batch_size=self.n_way, drop_last=True)
         else:
-            self.get_class_sampler = InfiniteClassSampler(self.total_classes, self.n_way)
+            self.class_sampler = InfiniteClassSampler(self.total_classes, self.n_way)
 
     def __iter__(self):
         """Get a batch of samples for a k-shot n-way task.
@@ -156,7 +156,7 @@ class FewShot(IterableDataset):
         else:
             k_shot = self.k_shot
 
-        for new_class_indices in self.get_class_sampler:
+        for new_class_indices in self.class_sampler:
             X_train_samples = []
             X_test_samples = []
 
