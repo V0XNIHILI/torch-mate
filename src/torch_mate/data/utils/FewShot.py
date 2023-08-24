@@ -71,18 +71,18 @@ class FewShot(IterableDataset):
 
         Args:
             dataset (Dataset): The dataset to use. Labels should be integers or torch Scalars.
-            n_way (int): Number of classes per batch.
+            n_way (int): Number of classes in the query and query set.
             k_shot (int, optional): Number of samples per class in the support set.
             query_shots (Optional[int]): Number of samples per class in the query set. If not set, query_shots is set to k_shot. Defaults to -1.
             first_iter_ways_shots (Optional[Tuple[int, int]], optional): Number of classes and samples per class for the first iteration. Defaults to None.
             support_query_split (Optional[Tuple[int, int]], optional): Create non-overlapping support and query pools of given number of samples per class. Defaults to None.
             incremental (bool, optional): Whether to incrementally sample classes. Defaults to False.
             cumulative (bool, optional): Whether to increase the query set size with each iteration. This flag will only work when incremental is set to True. Defaults to False.
-            always_include_classes (Optional[List[int]], optional): List of classes to always include in the batch, both in the support and query set. Defaults to None.
+            always_include_classes (Optional[List[int]], optional): List of classes to always include in both in the support and query set. Defaults to None.
             always_include_query_classes (Optional[List[int]], optional): List of classes to always include in the query set. These classes will never occur in the support set. Defaults to None.
-            samples_per_class (Optional[int], optional): Number of samples per class to use. Can be used for large datasets where the classes are ordered to avoid iterating over the whole dataset. Defaults to None.s
+            samples_per_class (Optional[int], optional): Number of samples per class to use. Can be used for large datasets where the classes are ordered (class_0_sample_0, c0s1, c0s2, c1s0, c1s1, c1s2, ...) to avoid iterating over the whole dataset for index per class computation. Defaults to None.
             transform (Optional[Callable], optional): Transform applied to every data sample. Will be reapplied every time a batch is served. Defaults to None.
-            per_class_transform (Optional[Callable], optional): Transform applied to every data sample. Will only be applied once per class. Defaults to None.
+            per_class_transform (Optional[Callable], optional): Transform applied to every data sample. Will be applied to every class separately. Defaults to None.
         """
 
         if cumulative and not incremental:
@@ -152,9 +152,8 @@ class FewShot(IterableDataset):
 
         # Change the way and shots for the first iteration
         if self.first_iter_ways_shots:
-            n_way, k_shot = self.first_iter_ways_shots
+            _, k_shot = self.first_iter_ways_shots
         else:
-            n_way = self.n_way
             k_shot = self.k_shot
 
         for new_class_indices in self.get_class_sampler:
@@ -164,13 +163,12 @@ class FewShot(IterableDataset):
             y_train_samples = []
             y_test_samples = []
 
-            # Add the first iteration way count to the class indexes to make the negative first iteration indices positive
-            offset_new_class_indices = list(np.array(new_class_indices) + self.first_iter_ways_shots[0]) if self.first_iter_ways_shots else new_class_indices
+            n_way = len(new_class_indices)
 
-            class_indices = offset_new_class_indices + cumulative_classes + self.always_include_query_classes
+            class_indices = new_class_indices + cumulative_classes + self.always_include_query_classes
 
             if self.cumulative:
-                cumulative_classes.extend(offset_new_class_indices)
+                cumulative_classes.extend(new_class_indices)
 
             if self.always_include_classes is not None:
                 # This line also makes sure that the always include classes are always
@@ -221,7 +219,6 @@ class FewShot(IterableDataset):
 
             # Reset the way and shots for the next iteration if the first iteration was different
             if self.first_iter_ways_shots:
-                n_way = self.n_way
                 k_shot = self.k_shot
                 query_shots = self.query_shots
 
