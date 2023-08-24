@@ -4,7 +4,9 @@ from itertools import repeat, chain
 
 import numpy as np
 import torch
-from torch.utils.data import Dataset, IterableDataset, BatchSampler, SequentialSampler
+from torch.utils.data import Dataset, IterableDataset, BatchSampler, RandomSampler
+
+from tqdm import tqdm
 
 from torch_mate.data.samplers import InfiniteClassSampler
 
@@ -13,7 +15,7 @@ def get_indices_per_class(dataset: Dataset, support_query_split: Optional[Tuple[
     indices_per_class = {}
 
     if not samples_per_class:
-        for i, (_, label) in enumerate(dataset):
+        for i, (_, label) in tqdm(enumerate(dataset), total=len(dataset), desc="Getting indices per class"):
             if not isinstance(label, int):
                 label = label.item()
 
@@ -48,6 +50,7 @@ class FewShot(IterableDataset):
                  incremental: bool = False,
                  cumulative: bool = False,
                  always_include_classes: Optional[List[int]] = None,
+                 always_include_query_classes: Optional[List[int]] = None,
                  samples_per_class: Optional[int] = None,
                  transform: Optional[Callable] = None,
                  per_class_transform: Optional[Callable] = None):
@@ -76,6 +79,7 @@ class FewShot(IterableDataset):
             incremental (bool, optional): Whether to incrementally sample classes. Defaults to False.
             cumulative (bool, optional): Whether to increase the query set size with each iteration. This flag will only work when incremental is set to True. Defaults to False.
             always_include_classes (Optional[List[int]], optional): List of classes to always include in the batch, both in the support and query set. Defaults to None.
+            always_include_query_classes (Optional[List[int]], optional): List of classes to always include in the query set. These classes will never occur in the support set. Defaults to None.
             samples_per_class (Optional[int], optional): Number of samples per class to use. Can be used for large datasets where the classes are ordered to avoid iterating over the whole dataset. Defaults to None.s
             transform (Optional[Callable], optional): Transform applied to every data sample. Will be reapplied every time a batch is served. Defaults to None.
             per_class_transform (Optional[Callable], optional): Transform applied to every data sample. Will only be applied once per class. Defaults to None.
@@ -110,6 +114,7 @@ class FewShot(IterableDataset):
         self.query_shots = query_shots if query_shots != -1 else k_shot
 
         self.always_include_classes = always_include_classes
+        self.always_include_query_classes = always_include_query_classes if always_include_query_classes is not None else []
 
         self.transform = transform
         self.per_class_transform = per_class_transform
@@ -126,20 +131,13 @@ class FewShot(IterableDataset):
             first_iter = []
 
             if self.first_iter_ways_shots:
-                first_iter_classes = self.first_iter_ways_shots[0]
-                # Use negative values as first_iter_classes is later added to all indices
-                # when self.first_iter_ways_shots is defined. This is to make sure that the
-                # iterations after the first iteration do not contain the same classes as
-                # the first iteration. The SequentialSampler used for all but the first
-                # iteration will start at 0, so we need to make sure that the first iteration
-                # is negative to avoid overlap.
-                first_iter = [list(range(-first_iter_classes, 0))]
+                raise NotImplementedError("first_iter_ways_shots is not yet implemented.")
 
-            end = self.total_classes
+            classes_to_sample_from = list(set(list(range(self.total_classes))) - set(self.always_include_query_classes))
 
-            self.get_class_sampler = lambda: chain(first_iter, BatchSampler(SequentialSampler(range(self.total_classes - first_iter_classes)), batch_size=self.n_way, drop_last=True))
+            self.get_class_sampler = BatchSampler(RandomSampler(classes_to_sample_from, replacement=False), batch_size=self.n_way, drop_last=True)
         else:
-            self.get_class_sampler = lambda: InfiniteClassSampler(self.total_classes, self.n_way)
+            self.get_class_sampler = InfiniteClassSampler(self.total_classes, self.n_way)
 
     def __iter__(self):
         """Get a batch of samples for a k-shot n-way task.
@@ -150,11 +148,6 @@ class FewShot(IterableDataset):
 
         cumulative_classes = []
 
-        if self.incremental:
-            class_mapping = np.random.permutation(self.total_classes)
-        else:
-            class_mapping = np.arange(self.total_classes)
-
         query_shots = self.query_shots
 
         # Change the way and shots for the first iteration
@@ -164,7 +157,7 @@ class FewShot(IterableDataset):
             n_way = self.n_way
             k_shot = self.k_shot
 
-        for new_class_indices in self.get_class_sampler():
+        for new_class_indices in self.get_class_sampler:
             X_train_samples = []
             X_test_samples = []
 
@@ -174,12 +167,10 @@ class FewShot(IterableDataset):
             # Add the first iteration way count to the class indexes to make the negative first iteration indices positive
             offset_new_class_indices = list(np.array(new_class_indices) + self.first_iter_ways_shots[0]) if self.first_iter_ways_shots else new_class_indices
 
-            mapped_new_class_indices = list(class_mapping[offset_new_class_indices])
-
-            class_indices = mapped_new_class_indices + cumulative_classes
+            class_indices = offset_new_class_indices + cumulative_classes + self.always_include_query_classes
 
             if self.cumulative:
-                cumulative_classes.extend(mapped_new_class_indices)
+                cumulative_classes.extend(offset_new_class_indices)
 
             if self.always_include_classes is not None:
                 # This line also makes sure that the always include classes are always
