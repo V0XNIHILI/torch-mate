@@ -1,4 +1,4 @@
-from typing import Callable, List, Optional, Tuple, Union
+from typing import Callable, List, Optional, Tuple, Union, Dict
 
 from itertools import repeat, chain
 
@@ -11,7 +11,7 @@ from tqdm import tqdm
 from torch_mate.data.samplers import InfiniteClassSampler
 
 
-def get_indices_per_class(dataset: Dataset, support_query_split: Optional[Tuple[int, int]] = None, samples_per_class: Optional[int] = None) -> List[Union[List[int], Tuple[List[int], List[int]]]]:
+def get_indices_per_class(dataset: Dataset, support_query_split: Optional[Tuple[int, int]] = None, samples_per_class: Optional[int] = None) -> Union[Dict[int, List[int]], Dict[int, Tuple[List[int], List[int]]]]:
     indices_per_class = {}
 
     if not samples_per_class:
@@ -34,8 +34,7 @@ def get_indices_per_class(dataset: Dataset, support_query_split: Optional[Tuple[
         for key in indices_per_class.keys():
             indices_per_class[key] = (indices_per_class[key][:n_support], indices_per_class[key][n_support:n_support+n_query])
 
-    # Sort dict by key and return a list of the values
-    return [indices_per_class[key] for key in sorted(indices_per_class.keys())]
+    return indices_per_class
 
 
 class FewShot(IterableDataset):
@@ -133,7 +132,7 @@ class FewShot(IterableDataset):
             if self.first_iter_ways_shots:
                 raise NotImplementedError("first_iter_ways_shots is not yet implemented.")
 
-            classes_to_sample_from = list(set(list(range(self.total_classes))) - set(self.always_include_query_classes))
+            classes_to_sample_from = list(set(self.indices_per_class.keys()) - set(self.always_include_query_classes))
 
             self.class_sampler = BatchSampler(RandomSampler(classes_to_sample_from, replacement=False), batch_size=self.n_way, drop_last=True)
         else:
