@@ -8,7 +8,7 @@ from torch.utils.data import Dataset, IterableDataset, BatchSampler, RandomSampl
 
 from tqdm import tqdm
 
-from torch_mate.data.samplers import InfiniteClassSampler
+from torch_mate.data.samplers import InfiniteClassSampler, DataSampler
 
 
 def get_indices_per_class(dataset: Dataset, support_query_split: Optional[Tuple[int, int]] = None, samples_per_class: Optional[int] = None) -> Union[Dict[int, List[int]], Dict[int, Tuple[List[int], List[int]]]]:
@@ -133,8 +133,7 @@ class FewShot(IterableDataset):
                 raise NotImplementedError("first_iter_ways_shots is not yet implemented.")
 
             classes_to_sample_from = list(set(self.indices_per_class.keys()) - set(self.always_include_query_classes))
-
-            self.class_sampler = BatchSampler(RandomSampler(classes_to_sample_from, replacement=False), batch_size=self.n_way, drop_last=True)
+            self.class_sampler = BatchSampler(DataSampler(classes_to_sample_from, RandomSampler(classes_to_sample_from, replacement=False)), batch_size=self.n_way, drop_last=True)
         else:
             self.class_sampler = InfiniteClassSampler(self.total_classes, self.n_way)
 
