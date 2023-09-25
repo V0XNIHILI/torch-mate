@@ -4,7 +4,7 @@ from torch.utils.data import Dataset
 
 class Transformed(Dataset):
 
-    def __init__(self, dataset: Dataset, transform: Optional[Callable] = None):
+    def __init__(self, dataset: Dataset, transform: Optional[Callable] = None, target_transform: Optional[Callable] = None) -> None:
         """Add a transform to a dataset that does not support transforms.
 
         Args:
@@ -13,6 +13,7 @@ class Transformed(Dataset):
         """
 
         self.transform = transform
+        self.target_transform = target_transform
 
         self.dataset = dataset
 
@@ -24,5 +25,8 @@ class Transformed(Dataset):
 
         if self.transform is not None:
             X = self.transform(X)
+
+        if self.target_transform is not None:
+            y = self.target_transform(y)
 
         return X, y
