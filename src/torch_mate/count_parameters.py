@@ -1,16 +1,27 @@
 import torch.nn as nn
 
 
-def count_parameters(model: nn.Module):
+def count_parameters(model: nn.Module, biases_only: bool = False) -> int:
     """Counts the number of parameters in a model.
 
     Implementation copied from: # https://discuss.pytorch.org/t/how-do-i-check-the-number-of-parameters-of-a-model/4325/7
 
     Args:
         model (nn.Module): The model to count the parameters of.
+        biases_only (bool, optional): Whether to only count biases. Defaults to False.
 
     Returns:
         int: Total number of parameters in the model.
     """
 
-    return sum(p.numel() for p in model.parameters() if p.requires_grad)
+    total_parameters = 0
+
+    for name, p in model.named_parameters():
+        if p.requires_grad:
+            if biases_only:
+                if name.endswith(".bias"):
+                    total_parameters += p.numel()
+            else:
+                total_parameters += p.numel()
+
+    return total_parameters
