@@ -17,7 +17,11 @@ def count_parameters(model: nn.Module, biases_only: bool = False) -> int:
     total_parameters = 0
 
     for name, p in model.named_parameters():
-        if p.requires_grad and ((biases_only and name.endswith(".bias") or not biases_only)):
-            total_parameters += p.numel()
+        if p.requires_grad:
+            if biases_only:
+                if name.endswith(".bias"):
+                    total_parameters += p.numel()
+            else:
+                total_parameters += p.numel()
 
     return total_parameters

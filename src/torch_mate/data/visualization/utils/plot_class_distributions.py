@@ -4,13 +4,14 @@ from torch.utils.data import Dataset
 
 import numpy as np
 
-def plot_class_distribution(dataset: Dataset, title: str, shift: int, width=0.2):
-    labels = np.array([label for _, label in dataset])
+from torch_mate.data.utils.get_class_counts import get_class_counts
 
-    unique_label_count = len(np.unique(labels))
-    
-    # Calculate percentage of each class
-    class_dist = np.array([np.sum(labels == i) for i in range(unique_label_count)]) / len(labels)
+def plot_class_distribution(dataset: Dataset, title: str, shift: int, width=0.2):
+    class_counts = get_class_counts(dataset)
+
+    unique_labels = sorted(class_counts.keys())
+    unique_label_count = len(unique_labels)
+    class_dist = [class_counts[label] for label in unique_labels]
 
     plt.bar(np.arange(unique_label_count)+shift*width, class_dist, width=width, label=title)
 
