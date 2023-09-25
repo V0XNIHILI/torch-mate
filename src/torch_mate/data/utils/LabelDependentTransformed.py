@@ -7,7 +7,7 @@ class LabelDependentTransformed(Dataset):
 
     def __init__(self,
                  dataset: Dataset,
-                 dependent_transform: Callable,
+                 dependent_transform: Union[Callable, None] = None,
                  transform: Union[Callable, None] = None):
         """Dataset where a transform can be applied that takes in both the x-value (i.e. an image) and the label.
 
@@ -24,7 +24,8 @@ class LabelDependentTransformed(Dataset):
     def __getitem__(self, index: int):
         x, y = self.dataset[index]
 
-        x = self.dependent_transform(x, y)
+        if self.dependent_transform is not None:
+            x = self.dependent_transform(x, y)
 
         if self.transform is not None:
             x = self.transform(x)
