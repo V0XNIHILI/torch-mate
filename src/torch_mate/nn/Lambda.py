@@ -1,5 +1,7 @@
 import types
 
+import torch.nn as nn
+
 class Lambda(nn.Module):
     def __init__(self, lambd: callable):
         """Creates a module that applies a lambda function to its input.
