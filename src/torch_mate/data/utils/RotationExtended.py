@@ -11,7 +11,7 @@ class RotationExtended(Dataset):
                  samples_per_class: int,
                  angles: Sequence[int] = [0, 90, 180, 270]):
         """Dataset that extends a dataset by rotating each sample by a given
-        angle.
+        angle. For example, it is often used while training on the Omniglot dataset.
 
         Args:
             dataset (Dataset): Dataset to extend.
@@ -23,6 +23,8 @@ class RotationExtended(Dataset):
         self.samples_per_class = samples_per_class
         self.angles = angles
 
+        self.total_classes = len(self.dataset) // self.samples_per_class
+
     def __len__(self):
         return len(self.dataset) * len(self.angles)
 
@@ -32,5 +34,4 @@ class RotationExtended(Dataset):
         angle = self.angles[rotation_index]
         image = TF.rotate(image, angle)
 
-        return image, label + rotation_index * (len(self.dataset) //
-                                                self.samples_per_class)
+        return image, label + rotation_index * self.total_classes
