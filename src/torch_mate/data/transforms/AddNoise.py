@@ -12,7 +12,8 @@ class AddNoise:
                  p: float = 0.8,
                  max_noise_level: float = 1.0):
         """Randomly add noise to a data sample, where noise is only added if the input sample is not
-        already a noise signal itself. Data is clipped at (-1, 1) when noise is added.
+        already a noise signal itself. Data is clipped at (-1, 1) when noise is added. Use together
+        with `torch_mate.data.utils.LabelDependentTransform` to apply to any dataset.
 
         Args:
             noise_samples (List[torch.Tensor]): List of noisy data to add to input data
