@@ -4,13 +4,10 @@ from typing import Callable, Dict, Optional, Union
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from torch.utils.data import DataLoader
-
 from dotmap import DotMap
-
-from torch_mate.utils.calc_accuracy import calc_accuracy
+from torch.utils.data import DataLoader
+from torch_mate.utils import calc_accuracy, iterate_to_device
 from torch_mate.contexts import evaluating, training
-from torch_mate.utils.iterate_to_device import iterate_to_device
 
 from tqdm import tqdm
 
@@ -119,8 +116,10 @@ def main(
     run_name: Union[str, None] = None,
     compile_model: bool = True,
     log: Union[Callable[[Dict], None], None] = None,
-    custom_evaluate: Union[Callable[[nn.Module, nn.Module, torch.device],
+    custom_evaluate: Union[Callable[[nn.Module, nn.Module, torch.device, OptionalBatchTransform],
                                     Dict], None] = None,
+    custom_train: Union[Callable[[nn.Module, nn.Module, DataLoader, torch.optim.Optimizer, torch.device, OptionalBatchTransform, OptionalExtLoss], Dict], None] = None,
+    step_key: str = "epoch",
 ):
     assert run_name is not None if save_every is not None else True, "run_name must be provided if save_every is not None."
 
@@ -153,15 +152,23 @@ def main(
         log = lambda _: None
 
     for epoch in tqdm(range(cfg.task.train.n_epochs)):
-        train_error, train_accuracy = train(model, loss, train_data_loader,
-                                            opt, device, batch_transform,
-                                            extra_loss)
+        train_data = {
+            step_key: epoch,
+        }
 
-        log({
-            "epoch": epoch,
-            "train/loss": train_error,
-            "train/accuracy": train_accuracy
-        })
+        if not custom_train:
+            train_error, train_accuracy = train(model, loss, train_data_loader,
+                                        opt, device, batch_transform,
+                                        extra_loss)
+
+            train_data.update({
+                "train/loss": train_error,
+                "train/accuracy": train_accuracy
+            })
+        else:
+            train_data.update(custom_train(model, loss, train_data_loader, opt, device, batch_transform, extra_loss))
+
+        log(train_data)
 
         if cfg.lr_scheduler:
             scheduler.step()
@@ -169,7 +176,7 @@ def main(
         is_last_epoch: bool = epoch == cfg.task.train.n_epochs - 1
 
         if epoch % test_every == 0 or is_last_epoch:
-            evaluation_data = {"epoch": epoch}
+            evaluation_data = {step_key: epoch}
 
             if val_data_loader is not None:
                 (val_error,
@@ -181,7 +188,7 @@ def main(
                     "val/accuracy": val_accuracy
                 })
             elif custom_evaluate is not None:
-                evaluation_data.update(custom_evaluate(model, loss, device))
+                evaluation_data.update(custom_evaluate(model, loss, device, batch_transform))
 
             log(evaluation_data)
 
@@ -193,7 +200,7 @@ def main(
                 state_dict = model.state_dict()
 
             torch.save(state_dict,
-                       f"{model_save_dir_path}/epoch_{epoch}.pth")
+                       f"{model_save_dir_path}/{step_key}_{epoch}.pth")
 
     if test_data_loader:
         (test_error, test_accuracy), _ = evaluate(model, loss,
@@ -201,7 +208,7 @@ def main(
                                                   batch_transform, extra_loss)
 
         log({
-            "epoch": cfg.task.train.n_epochs - 1,
+            step_key: cfg.task.train.n_epochs - 1,
             "test/loss": test_error,
             "test/accuracy": test_accuracy
         })
