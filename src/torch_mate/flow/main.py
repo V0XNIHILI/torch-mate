@@ -203,7 +203,7 @@ def main(
             if stop_early:
                 break_this_step = stop_early(evaluation_data.values()[1])
 
-        if save_every != 0 and (epoch % save_every == 0 or is_last_epoch or break_this_step):
+        if (save_every > 0 and (epoch % save_every == 0 or is_last_epoch or break_this_step)) or (save_every == -1 and (is_last_epoch or break_this_step)):
             # Also support DataParallel
             try:
                 state_dict = model.module.state_dict()
