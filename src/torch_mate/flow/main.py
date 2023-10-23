@@ -4,15 +4,19 @@ from typing import Callable, Dict, Optional, Union
 import torch
 import torch.nn as nn
 import torch.optim as optim
+
 from dotmap import DotMap
+
+from early_stopping import EarlyStopping
+
 from torch.utils.data import DataLoader
 from torch_mate.utils import calc_accuracy, iterate_to_device
 from torch_mate.contexts import evaluating, training
 
 from tqdm import tqdm
 
-OptionalBatchTransform = Union[Callable[[torch.Tensor], torch.Tensor], None]
-OptionalExtLoss = Union[Callable[[], torch.Tensor], None]
+OptionalBatchTransform = Optional[Callable[[torch.Tensor], torch.Tensor]]
+OptionalExtLoss = Optional[Callable[[torch.Tensor, torch.Tensor], torch.Tensor]]
 
 
 def process_batch(model: nn.Module,
@@ -27,7 +31,7 @@ def process_batch(model: nn.Module,
     output = model(X)
     accuracy = calc_accuracy(output, y)
 
-    error = criterion(output, y) + (extra_loss() if extra_loss else 0.0)
+    error = criterion(output, y) + (extra_loss(X, output) if extra_loss else 0.0)
 
     preds = torch.argmax(output, dim=1)
 
@@ -112,16 +116,16 @@ def main(
     batch_transform: OptionalBatchTransform = None,
     extra_loss=None,
     test_every=2,
-    save_every=50,
+    save_every: int =50,
     run_name: Union[str, None] = None,
-    compile_model: bool = True,
+    compile_model: bool = False,
     log: Union[Callable[[Dict], None], None] = None,
     custom_evaluate: Union[Callable[[nn.Module, nn.Module, torch.device, OptionalBatchTransform],
                                     Dict], None] = None,
     custom_train: Union[Callable[[nn.Module, nn.Module, DataLoader, torch.optim.Optimizer, torch.device, OptionalBatchTransform, OptionalExtLoss], Dict], None] = None,
     step_key: str = "epoch",
 ):
-    assert run_name is not None if save_every is not None else True, "run_name must be provided if save_every is not None."
+    assert run_name is not None if save_every is not 0 else True, "run_name must be provided if save_every is not 0."
 
     if val_data_loader is None and custom_evaluate is None:
         raise ValueError(
@@ -147,6 +151,8 @@ def main(
         opt, **cfg.lr_scheduler.cfg.toDict()) if cfg.lr_scheduler else None
 
     loss = getattr(nn, cfg.criterion.name)()
+
+    stop_early = EarlyStopping(*cfg.early_stopping.cfg) if cfg.early_stopping else None
 
     if log is None:
         log = lambda _: None
@@ -175,6 +181,8 @@ def main(
 
         is_last_epoch: bool = epoch == cfg.task.train.n_epochs - 1
 
+        break_this_step = False
+
         if epoch % test_every == 0 or is_last_epoch:
             evaluation_data = {step_key: epoch}
 
@@ -192,7 +200,10 @@ def main(
 
             log(evaluation_data)
 
-        if epoch % save_every == 0 or is_last_epoch:
+            if stop_early:
+                break_this_step = stop_early(evaluation_data.values()[1])
+
+        if save_every != 0 and (epoch % save_every == 0 or is_last_epoch or break_this_step):
             # Also support DataParallel
             try:
                 state_dict = model.module.state_dict()
@@ -201,6 +212,9 @@ def main(
 
             torch.save(state_dict,
                        f"{model_save_dir_path}/{step_key}_{epoch}.pth")
+            
+        if break_this_step:
+            break
 
     if test_data_loader:
         (test_error, test_accuracy), _ = evaluate(model, loss,
