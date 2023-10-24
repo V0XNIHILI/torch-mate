@@ -114,18 +114,40 @@ def main(
     device: torch.device,
     test_data_loader: Optional[DataLoader] = None,
     batch_transform: OptionalBatchTransform = None,
-    extra_loss=None,
-    test_every=2,
-    save_every: int =50,
-    run_name: Union[str, None] = None,
+    extra_loss: OptionalExtLoss =None,
+    test_every: int = 2,
+    save_every: int = 50,
+    save_dir: Optional[str] = None,
     compile_model: bool = False,
     log: Union[Callable[[Dict], None], None] = None,
-    custom_evaluate: Union[Callable[[nn.Module, nn.Module, torch.device, OptionalBatchTransform],
-                                    Dict], None] = None,
+    custom_evaluate: Union[Callable[[nn.Module, nn.Module, torch.device, OptionalBatchTransform], Dict], None] = None,
     custom_train: Union[Callable[[nn.Module, nn.Module, DataLoader, torch.optim.Optimizer, torch.device, OptionalBatchTransform, OptionalExtLoss], Dict], None] = None,
     step_key: str = "epoch",
 ):
-    assert run_name is not None if save_every is not 0 else True, "run_name must be provided if save_every is not 0."
+    """Train a PyTorch model via one function call.
+
+    Args:
+        cfg (DotMap): Configuration for the training process, containing information for the criterion, optimizer and optionally the lr_scheduler and early_stopping.
+        model (nn.Module): Model to train.
+        train_data_loader (DataLoader): Training data loader.
+        val_data_loader (Optional[DataLoader]): Validation data loader.
+        device (torch.device): Device to move model and training batches to.
+        test_data_loader (Optional[DataLoader], optional): Testing data loader. If specified, the model will be evaluated on the test set after training. Defaults to None.
+        batch_transform (OptionalBatchTransform, optional): Transform to apply to whole batch of data during training/validation/testing. Defaults to None.
+        extra_loss (OptionalExtLoss, optional): Extra loss function which gets added to the normal loss. This function receives the batch transformed data and the model outputs for that batch via `extra_loss(X, output)`. Defaults to None.
+        test_every (int, optional): How often to measure validation performance. Defaults to 2.
+        save_every (int, optional): How often to save the model. If set to 0, the model will never be saved, if set to -1, the model will only be saved in the last step. Defaults to 50.
+        save_dir (Optional[str], optional): Where to save the model. Prepended inside of this function by `nets/`. Defaults to None.
+        compile_model (bool, optional): Whether or not to compile the model (for PyTorch 2.0). Defaults to False.
+        log (Union[Callable[[Dict], None], None], optional): Logging callback function through which all model performance will be communicated. Can be used for monitoring or metric tracking. Defaults to None.
+        custom_evaluate (Union[Callable[[nn.Module, nn.Module, torch.device, OptionalBatchTransform], Dict], None], optional): _description_. Defaults to None.
+        custom_train (Union[Callable[[nn.Module, nn.Module, DataLoader, torch.optim.Optimizer, torch.device, OptionalBatchTransform, OptionalExtLoss], Dict], None], optional): _description_. Defaults to None.
+        step_key (str, optional): Logging step key, which is added to every dict that is passed to `log`. Defaults to "epoch".
+
+    Raises:
+        ValueError: If XOR of val_data_loader and custom_evaluate is False
+    """
+    assert save_dir is not None if save_every != 0 else True, "save_dir must be provided if save_every is not 0."
 
     if val_data_loader is None and custom_evaluate is None:
         raise ValueError(
@@ -137,7 +159,7 @@ def main(
             "Both a validation data loader and a custom evaluation function were provided."
         )
     
-    model_save_dir_path = f"nets/{run_name}"
+    model_save_dir_path = f"nets/{save_dir}"
     os.makedirs(model_save_dir_path)
 
     model.to(device)
