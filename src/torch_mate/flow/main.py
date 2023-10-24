@@ -5,6 +5,8 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 
+import numpy as np
+
 from dotmap import DotMap
 
 from early_stopping import EarlyStopping
@@ -72,38 +74,23 @@ def evaluate(model: nn.Module,
              eval_data_loader: DataLoader,
              device: torch.device,
              batch_transform: OptionalBatchTransform = None,
-             extra_loss: OptionalExtLoss = None,
-             store_predictions: bool = False):
+             extra_loss: OptionalExtLoss = None):
     eval_error = 0.0
-    eval_accuracy = 0.0
-
-    preds = []
-    labels = []
+    eval_accuracies = []
 
     # Using evaluating(model) or evaluating(maml) here does not make a difference
     with evaluating(model), torch.no_grad():
         for (X, y) in iterate_to_device(eval_data_loader, device, True):
-            (error, accuracy), (pred,
-                                label) = process_batch(model, criterion, X, y,
+            (error, accuracy), _ = process_batch(model, criterion, X, y,
                                                        batch_transform,
                                                        extra_loss)
 
             eval_error += error.detach()
-            eval_accuracy += accuracy
+            eval_accuracies.append(accuracy)
 
-            if store_predictions:
-                preds.append(pred)
-                labels.append(label)
+    eval_accuracies = np.array(eval_accuracies)
 
-    if store_predictions:
-        preds = torch.cat(preds)
-        labels = torch.cat(labels)
-    else:
-        preds = None
-        labels = None
-
-    return (eval_error.item() / len(eval_data_loader),
-            eval_accuracy / len(eval_data_loader)), (preds, labels)
+    return eval_error.item() / len(eval_data_loader), (np.mean(eval_accuracies), 1.96 * np.std(eval_accuracies) / np.sqrt(len(eval_accuracies)))
 
 
 def main(
@@ -122,6 +109,7 @@ def main(
     log: Union[Callable[[Dict], None], None] = None,
     custom_evaluate: Union[Callable[[nn.Module, nn.Module, torch.device, OptionalBatchTransform], Dict], None] = None,
     custom_train: Union[Callable[[nn.Module, nn.Module, DataLoader, torch.optim.Optimizer, torch.device, OptionalBatchTransform, OptionalExtLoss], Dict], None] = None,
+    log_conf_interval: bool = False,
     step_key: str = "epoch",
 ):
     """Train a PyTorch model via one function call.
@@ -142,6 +130,7 @@ def main(
         log (Union[Callable[[Dict], None], None], optional): Logging callback function through which all model performance will be communicated. Can be used for monitoring or metric tracking. Defaults to None.
         custom_evaluate (Union[Callable[[nn.Module, nn.Module, torch.device, OptionalBatchTransform], Dict], None], optional): _description_. Defaults to None.
         custom_train (Union[Callable[[nn.Module, nn.Module, DataLoader, torch.optim.Optimizer, torch.device, OptionalBatchTransform, OptionalExtLoss], Dict], None], optional): _description_. Defaults to None.
+        log_conf_interval (bool, optional): Whether or not to log the 95% confidence interval of the test and validation accuracy in the last epoch. Defaults to False.
         step_key (str, optional): Logging step key, which is added to every dict that is passed to `log`. Defaults to "epoch".
 
     Raises:
@@ -209,14 +198,16 @@ def main(
             evaluation_data = {step_key: epoch}
 
             if val_data_loader is not None:
-                (val_error,
-                 val_accuracy), _ = evaluate(model, loss, val_data_loader,
+                val_error, (val_accuracy_avg, val_accuracy_conf_interval) = evaluate(model, loss, val_data_loader,
                                              device, batch_transform, extra_loss)
 
                 evaluation_data.update({
                     "val/loss": val_error,
-                    "val/accuracy": val_accuracy
+                    "val/accuracy": val_accuracy_avg
                 })
+
+                if log_conf_interval and is_last_epoch:
+                    evaluation_data["val/accuracy_conf_interval"] = val_accuracy_conf_interval
             elif custom_evaluate is not None:
                 evaluation_data.update(custom_evaluate(model, loss, device, batch_transform))
 
@@ -239,12 +230,17 @@ def main(
             break
 
     if test_data_loader:
-        (test_error, test_accuracy), _ = evaluate(model, loss,
+        test_error, (test_accuracy_avg, test_accuracy_conf_interval) = evaluate(model, loss,
                                                   test_data_loader, device,
                                                   batch_transform, extra_loss)
 
-        log({
+        test_data = {
             step_key: cfg.task.train.n_epochs - 1,
             "test/loss": test_error,
-            "test/accuracy": test_accuracy
-        })
+            "test/accuracy": test_accuracy_avg
+        }
+
+        if log_conf_interval:
+            test_data["test/accuracy_conf_interval"] = test_accuracy_conf_interval
+
+        log(test_data)
