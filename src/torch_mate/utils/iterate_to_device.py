@@ -2,9 +2,9 @@ from typing import Iterable
 
 import torch
 
-from torch_mate.utils import nested_tuple_to_device
+from .tuples_to_device import nested_tuple_to_device
 
-from torch_mate.typing import NestedTupleOfTensors
+from ..typing import NestedTupleOfTensors
 
 def iterate_to_device(sequence: Iterable[NestedTupleOfTensors],
                         device: torch.device,

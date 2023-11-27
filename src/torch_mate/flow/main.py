@@ -4,18 +4,19 @@ from typing import Callable, Dict, Optional, Union
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from torch.utils.data import DataLoader
 
 from dotmap import DotMap
 
-from torch_mate.utils.calc_accuracy import calc_accuracy
+from early_stopping import EarlyStopping
+
+from torch.utils.data import DataLoader
+from torch_mate.utils import calc_accuracy, iterate_to_device
 from torch_mate.contexts import evaluating, training
-from torch_mate.utils.iterate_to_device import iterate_to_device
 
 from tqdm import tqdm
 
-OptionalBatchTransform = Union[Callable[[torch.Tensor], torch.Tensor], None]
-OptionalExtLoss = Union[Callable[[], torch.Tensor], None]
+OptionalBatchTransform = Optional[Callable[[torch.Tensor], torch.Tensor]]
+OptionalExtLoss = Optional[Callable[[torch.Tensor, torch.Tensor], torch.Tensor]]
 
 
 def process_batch(model: nn.Module,
@@ -30,7 +31,7 @@ def process_batch(model: nn.Module,
     output = model(X)
     accuracy = calc_accuracy(output, y)
 
-    error = criterion(output, y) + (extra_loss() if extra_loss else 0.0)
+    error = criterion(output, y) + (extra_loss(X, output) if extra_loss else 0.0)
 
     preds = torch.argmax(output, dim=1)
 
@@ -115,14 +116,16 @@ def main(
     batch_transform: OptionalBatchTransform = None,
     extra_loss=None,
     test_every=2,
-    save_every=50,
+    save_every: int =50,
     run_name: Union[str, None] = None,
-    compile_model: bool = True,
+    compile_model: bool = False,
     log: Union[Callable[[Dict], None], None] = None,
-    custom_evaluate: Union[Callable[[nn.Module, nn.Module, torch.device],
+    custom_evaluate: Union[Callable[[nn.Module, nn.Module, torch.device, OptionalBatchTransform],
                                     Dict], None] = None,
+    custom_train: Union[Callable[[nn.Module, nn.Module, DataLoader, torch.optim.Optimizer, torch.device, OptionalBatchTransform, OptionalExtLoss], Dict], None] = None,
+    step_key: str = "epoch",
 ):
-    assert run_name is not None if save_every is not None else True, "run_name must be provided if save_every is not None."
+    assert run_name is not None if save_every is not 0 else True, "run_name must be provided if save_every is not 0."
 
     if val_data_loader is None and custom_evaluate is None:
         raise ValueError(
@@ -149,27 +152,39 @@ def main(
 
     loss = getattr(nn, cfg.criterion.name)()
 
+    stop_early = EarlyStopping(*cfg.early_stopping.cfg) if cfg.early_stopping else None
+
     if log is None:
         log = lambda _: None
 
     for epoch in tqdm(range(cfg.task.train.n_epochs)):
-        train_error, train_accuracy = train(model, loss, train_data_loader,
-                                            opt, device, batch_transform,
-                                            extra_loss)
+        train_data = {
+            step_key: epoch,
+        }
 
-        log({
-            "epoch": epoch,
-            "train/loss": train_error,
-            "train/accuracy": train_accuracy
-        })
+        if not custom_train:
+            train_error, train_accuracy = train(model, loss, train_data_loader,
+                                        opt, device, batch_transform,
+                                        extra_loss)
+
+            train_data.update({
+                "train/loss": train_error,
+                "train/accuracy": train_accuracy
+            })
+        else:
+            train_data.update(custom_train(model, loss, train_data_loader, opt, device, batch_transform, extra_loss))
+
+        log(train_data)
 
         if cfg.lr_scheduler:
             scheduler.step()
 
         is_last_epoch: bool = epoch == cfg.task.train.n_epochs - 1
 
+        break_this_step = False
+
         if epoch % test_every == 0 or is_last_epoch:
-            evaluation_data = {"epoch": epoch}
+            evaluation_data = {step_key: epoch}
 
             if val_data_loader is not None:
                 (val_error,
@@ -181,11 +196,14 @@ def main(
                     "val/accuracy": val_accuracy
                 })
             elif custom_evaluate is not None:
-                evaluation_data.update(custom_evaluate(model, loss, device))
+                evaluation_data.update(custom_evaluate(model, loss, device, batch_transform))
 
             log(evaluation_data)
 
-        if epoch % save_every == 0 or is_last_epoch:
+            if stop_early:
+                break_this_step = stop_early(evaluation_data.values()[1])
+
+        if (save_every > 0 and (epoch % save_every == 0 or is_last_epoch or break_this_step)) or (save_every == -1 and (is_last_epoch or break_this_step)):
             # Also support DataParallel
             try:
                 state_dict = model.module.state_dict()
@@ -193,7 +211,10 @@ def main(
                 state_dict = model.state_dict()
 
             torch.save(state_dict,
-                       f"{model_save_dir_path}/epoch_{epoch}.pth")
+                       f"{model_save_dir_path}/{step_key}_{epoch}.pth")
+            
+        if break_this_step:
+            break
 
     if test_data_loader:
         (test_error, test_accuracy), _ = evaluate(model, loss,
@@ -201,7 +222,7 @@ def main(
                                                   batch_transform, extra_loss)
 
         log({
-            "epoch": cfg.task.train.n_epochs - 1,
+            step_key: cfg.task.train.n_epochs - 1,
             "test/loss": test_error,
             "test/accuracy": test_accuracy
         })
