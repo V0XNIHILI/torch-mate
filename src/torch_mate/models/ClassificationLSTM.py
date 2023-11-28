@@ -34,7 +34,7 @@ class ClassificationLSTM(nn.Module):
         """
 
         # (N, C_in, L_in) -> (L_in, N, C_in)
-        # 0 1 2               2    0  1
+        #  0  1     2         2     0  1
         # LSTM expects (N, L_in, C_in)
         x = x.transpose(1, 2)
 
