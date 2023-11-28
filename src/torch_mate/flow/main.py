@@ -10,14 +10,13 @@ from dotmap import DotMap
 from early_stopping import EarlyStopping
 
 from torch.utils.data import DataLoader
-from torch_mate.utils import calc_accuracy, iterate_to_device
+from torch_mate.utils import calc_accuracy, iterate_to_device, get_class
 from torch_mate.contexts import evaluating, training
 
 from tqdm import tqdm
 
 OptionalBatchTransform = Optional[Callable[[torch.Tensor], torch.Tensor]]
 OptionalExtLoss = Optional[Callable[[torch.Tensor, torch.Tensor], torch.Tensor]]
-
 
 def process_batch(model: nn.Module,
                   criterion: nn.Module,
@@ -145,12 +144,12 @@ def main(
     if compile_model:
         model = torch.compile(model)
 
-    opt = getattr(optim, cfg.optimizer.name)(model.parameters(),
+    opt = get_class(optim, cfg.optimizer.name)(model.parameters(),
                                              **cfg.optimizer.cfg.toDict())
-    scheduler = getattr(optim.lr_scheduler, cfg.lr_scheduler.name)(
+    scheduler = get_class(optim.lr_scheduler, cfg.lr_scheduler.name)(
         opt, **cfg.lr_scheduler.cfg.toDict()) if cfg.lr_scheduler else None
 
-    loss = getattr(nn, cfg.criterion.name)()
+    loss = get_class(nn, cfg.criterion.name)()
 
     stop_early = EarlyStopping(*cfg.early_stopping.cfg) if cfg.early_stopping else None
 
