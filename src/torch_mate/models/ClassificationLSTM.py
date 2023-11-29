@@ -22,7 +22,7 @@ class ClassificationLSTM(nn.Module):
 
         super(ClassificationLSTM, self).__init__()
 
-        self.lstm = nn.LSTM(input_size, hidden_size)
+        self.lstm = nn.LSTM(input_size, hidden_size, batch_first=True)
         self.linear = nn.Linear(hidden_size, output_size)
 
     def forward(self, x: torch.Tensor, h: Optional[torch.Tensor] = None):
@@ -33,9 +33,8 @@ class ClassificationLSTM(nn.Module):
             h (Optional[torch.Tensor], optional): Hidden state. Defaults to None.
         """
 
-        # (N, C_in, L_in) -> (L_in, N, C_in)
-        #  0  1     2         2     0  1
-        # LSTM expects (N, L_in, C_in)
+        # (N, C_in, L_in) -> (N, L_in, C_in)
+        # LSTM with batch_first=True expects (N, L_in, C_in)
         x = x.transpose(1, 2)
 
         _, (h_t, _) = self.lstm(x, h)
