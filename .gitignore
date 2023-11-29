@@ -11,6 +11,9 @@ venv
 wandb
 lightning_logs
 
+data
+!src/torch_mate/data
+
 # macOS
 
 .DS_Store
