@@ -16,8 +16,10 @@ def get_class(base_module, class_name: str):
 
     module = base_module
 
-    if "/" in class_name:
-        base_module_name, class_name = class_name.split("/")
+    if "." in class_name:
+        parts = class_name.split(".")
+        base_module_name = ".".join(parts[:-1])
+        class_name = parts[-1]
 
         module = importlib.import_module(base_module_name)
 
