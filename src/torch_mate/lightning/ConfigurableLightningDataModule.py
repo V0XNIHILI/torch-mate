@@ -13,24 +13,24 @@ from torch_mate.lightning.build_transform import build_transform
 PossibleTransform = Union[transforms.Compose, nn.Identity, None]
 
 def create_state_transforms(task_stage_cfg: DotMap, common_pre_transforms: PossibleTransform, common_post_transforms: PossibleTransform):
-    if task_stage_cfg and task_stage_cfg.transforms:
-        stage_transform = build_transform(task_stage_cfg.transforms)
+    stage_transforms = []
 
-        if not common_pre_transforms:
-            return transforms.Compose([stage_transform, common_post_transforms])
-        
-        if not common_post_transforms:
-            return transforms.Compose([common_pre_transforms, stage_transform])
-        
-        return transforms.Compose([common_pre_transforms, stage_transform, common_post_transforms])
+    if common_pre_transforms:
+        stage_transforms.append(common_pre_transforms)
+
+    if task_stage_cfg and task_stage_cfg.transforms:
+        stage_transforms.append(build_transform(task_stage_cfg.transforms))
+
+    if common_post_transforms:
+        stage_transforms.append(common_post_transforms)
     
-    if not common_pre_transforms:
-        return common_post_transforms
-    
-    if not common_post_transforms:
-        return common_pre_transforms
-    
-    return transforms.Compose([common_pre_transforms, common_post_transforms])
+    if len(stage_transforms) == 0:
+        return None
+
+    if len(stage_transforms) == 1:
+        return stage_transforms[0]
+
+    return transforms.Compose(stage_transforms)
 
 
 
