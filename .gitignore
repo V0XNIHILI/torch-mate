@@ -6,6 +6,14 @@ venv
 
 *.egg-info/
 
+# Testing & debugging
+
+wandb
+lightning_logs
+
+data
+!src/torch_mate/data
+
 # macOS
 
 .DS_Store
