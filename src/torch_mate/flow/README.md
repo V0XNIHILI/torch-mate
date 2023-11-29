@@ -43,7 +43,7 @@ main(cfg, model, train_loader, val_loader, test_loader, device,
      log=print)
 ```
 
-### Save model!!!!
+### Save model
 
 ```python
 # Save model every 10 epochs
@@ -65,13 +65,20 @@ def custom_train(model, loss, train_data_loader, optimizer, device, batch_transf
 main(..., custom_train=custom_train)
 ```
 
-### Custom evaluation function !!!
+### Custom evaluation function
 
 ```python
-def custom_evaluate(model, loss, device, batch_transform):
+def custom_evaluate(model, loss, val_data_loader, device, batch_transform):
     return {'val/loss': -7.0, 'val/accuracy': 0.0, 'val/time': 0.48}
 
 main(..., val_data_loader=None, custom_evaluate=custom_evaluate)
+```
+
+### Custom test function
+
+```python
+def custom_test(model, loss, test_data_loader, device, batch_transform):
+    return {'test/loss': -7.0, 'test/accuracy': 0.0, 'test/time': 0.48}
 ```
 
 ### Various training options
