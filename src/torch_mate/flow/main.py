@@ -19,6 +19,7 @@ from tqdm import tqdm
 
 OptionalBatchTransform = Optional[Callable[[torch.Tensor], torch.Tensor]]
 OptionalExtLoss = Optional[Callable[[torch.Tensor, torch.Tensor], torch.Tensor]]
+OptionalCustomEvalTest = Optional[Callable[[nn.Module, nn.Module, DataLoader, torch.device, OptionalBatchTransform], Dict]]
 
 
 def process_batch(model: nn.Module,
@@ -97,7 +98,7 @@ def main(
     cfg: DotMap,
     model: nn.Module,
     train_data_loader: DataLoader,
-    val_data_loader: Optional[DataLoader],
+    val_data_loader: DataLoader,
     device: torch.device,
     test_data_loader: Optional[DataLoader] = None,
     batch_transform: OptionalBatchTransform = None,
@@ -106,8 +107,9 @@ def main(
     save_every: int = 50,
     save_dir: Optional[str] = None,
     compile_model: bool = False,
-    log: Union[Callable[[Dict], None], None] = None,
-    custom_evaluate: Union[Callable[[nn.Module, nn.Module, torch.device, OptionalBatchTransform], Dict], None] = None,
+    log: Optional[Callable[[Dict], None]] = None,
+    custom_evaluate: OptionalCustomEvalTest = None,
+    custom_test: OptionalCustomEvalTest = None,
     custom_train: Union[Callable[[nn.Module, nn.Module, DataLoader, torch.optim.Optimizer, torch.device, OptionalBatchTransform, OptionalExtLoss], Dict], None] = None,
     log_conf_interval: bool = False,
     step_key: str = "epoch",
@@ -118,7 +120,7 @@ def main(
         cfg (DotMap): Configuration for the training process, containing information for the criterion, optimizer and optionally the lr_scheduler and early_stopping.
         model (nn.Module): Model to train.
         train_data_loader (DataLoader): Training data loader.
-        val_data_loader (Optional[DataLoader]): Validation data loader.
+        val_data_loader (DataLoader): Validation data loader.
         device (torch.device): Device to move model and training batches to.
         test_data_loader (Optional[DataLoader], optional): Testing data loader. If specified, the model will be evaluated on the test set after training. Defaults to None.
         batch_transform (OptionalBatchTransform, optional): Transform to apply to whole batch of data during training/validation/testing. Defaults to None.
@@ -128,26 +130,14 @@ def main(
         save_dir (Optional[str], optional): Where to save the model. Prepended inside of this function by `nets/`. Defaults to None.
         compile_model (bool, optional): Whether or not to compile the model (for PyTorch 2.0). Defaults to False.
         log (Union[Callable[[Dict], None], None], optional): Logging callback function through which all model performance will be communicated. Can be used for monitoring or metric tracking. Defaults to None.
-        custom_evaluate (Union[Callable[[nn.Module, nn.Module, torch.device, OptionalBatchTransform], Dict], None], optional): _description_. Defaults to None.
+        custom_evaluate (OptionalCustomEvalTest, optional): _description_. Defaults to None.
+        custom_test (OptionalCustomEvalTest, optional): _description_. Defaults to None.
         custom_train (Union[Callable[[nn.Module, nn.Module, DataLoader, torch.optim.Optimizer, torch.device, OptionalBatchTransform, OptionalExtLoss], Dict], None], optional): _description_. Defaults to None.
         log_conf_interval (bool, optional): Whether or not to log the 95% confidence interval of the test and validation accuracy in the last epoch. Defaults to False.
         step_key (str, optional): Logging step key, which is added to every dict that is passed to `log`. Defaults to "epoch".
-
-    Raises:
-        ValueError: If XOR of val_data_loader and custom_evaluate is False
     """
     assert save_dir is not None if save_every != 0 else True, "save_dir must be provided if save_every is not 0."
 
-    if val_data_loader is None and custom_evaluate is None:
-        raise ValueError(
-            "No validation data loader provided, but no custom evaluation function either."
-        )
-    
-    if custom_evaluate is not None and val_data_loader is not None:
-        raise ValueError(
-            "Both a validation data loader and a custom evaluation function were provided."
-        )
-    
     model_save_dir_path = f"nets/{save_dir}"
     os.makedirs(model_save_dir_path)
 
@@ -197,7 +187,7 @@ def main(
         if epoch % test_every == 0 or is_last_epoch:
             evaluation_data = {step_key: epoch}
 
-            if val_data_loader is not None:
+            if not custom_evaluate:
                 val_error, (val_accuracy_avg, val_accuracy_conf_interval) = evaluate(model, loss, val_data_loader,
                                              device, batch_transform, extra_loss)
 
@@ -208,8 +198,8 @@ def main(
 
                 if log_conf_interval and is_last_epoch:
                     evaluation_data["val/accuracy_conf_interval"] = val_accuracy_conf_interval
-            elif custom_evaluate is not None:
-                evaluation_data.update(custom_evaluate(model, loss, device, batch_transform))
+            else:
+                evaluation_data.update(custom_evaluate(model, loss, val_data_loader, device, batch_transform))
 
             log(evaluation_data)
 
@@ -230,17 +220,21 @@ def main(
             break
 
     if test_data_loader:
-        test_error, (test_accuracy_avg, test_accuracy_conf_interval) = evaluate(model, loss,
-                                                  test_data_loader, device,
-                                                  batch_transform, extra_loss)
+        test_data = { step_key: cfg.task.train.n_epochs - 1 }
 
-        test_data = {
-            step_key: cfg.task.train.n_epochs - 1,
-            "test/loss": test_error,
-            "test/accuracy": test_accuracy_avg
-        }
+        if custom_test is not None:
+            test_data.update(custom_test(model, loss, test_data_loader, device, batch_transform))
+        else:
+            test_error, (test_accuracy_avg, test_accuracy_conf_interval) = evaluate(model, loss,
+                                                    test_data_loader, device,
+                                                    batch_transform, extra_loss)
 
-        if log_conf_interval:
-            test_data["test/accuracy_conf_interval"] = test_accuracy_conf_interval
+            test_data.update({
+                "test/loss": test_error,
+                "test/accuracy": test_accuracy_avg
+            })
+
+            if log_conf_interval:
+                test_data["test/accuracy_conf_interval"] = test_accuracy_conf_interval
 
         log(test_data)
