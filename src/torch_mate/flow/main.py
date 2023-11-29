@@ -130,8 +130,8 @@ def main(
         save_dir (Optional[str], optional): Where to save the model. Prepended inside of this function by `nets/`. Defaults to None.
         compile_model (bool, optional): Whether or not to compile the model (for PyTorch 2.0). Defaults to False.
         log (Union[Callable[[Dict], None], None], optional): Logging callback function through which all model performance will be communicated. Can be used for monitoring or metric tracking. Defaults to None.
-        custom_evaluate (OptionalCustomEvalTest, optional): _description_. Defaults to None.
-        custom_test (OptionalCustomEvalTest, optional): _description_. Defaults to None.
+        custom_evaluate (OptionalCustomEvalTest, optional): Custom evaluation function, called for validation and testing (if no custom_test function has been provided). Defaults to None.
+        custom_test (OptionalCustomEvalTest, optional): Custom test function. Defaults to None.
         custom_train (Union[Callable[[nn.Module, nn.Module, DataLoader, torch.optim.Optimizer, torch.device, OptionalBatchTransform, OptionalExtLoss], Dict], None], optional): _description_. Defaults to None.
         log_conf_interval (bool, optional): Whether or not to log the 95% confidence interval of the test and validation accuracy in the last epoch. Defaults to False.
         step_key (str, optional): Logging step key, which is added to every dict that is passed to `log`. Defaults to "epoch".
