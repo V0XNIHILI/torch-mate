@@ -6,6 +6,11 @@ venv
 
 *.egg-info/
 
+# Testing & debugging
+
+wandb
+lightning_logs
+
 # macOS
 
 .DS_Store
