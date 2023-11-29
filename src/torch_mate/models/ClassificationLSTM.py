@@ -38,7 +38,7 @@ class ClassificationLSTM(nn.Module):
         # LSTM expects (N, L_in, C_in)
         x = x.transpose(1, 2)
 
-        _, (h_t, _) = self._lstm(x, h)
+        _, (h_t, _) = self.lstm(x, h)
         h_t = h_t.squeeze(0)
 
-        return self._linear(h_t)
+        return self.linear(h_t)
