@@ -1,60 +1,10 @@
-from typing import Union
-
 import lightning as L
 
 from torch.utils.data import DataLoader
-import torchvision.transforms as transforms
-import torch.nn as nn
 
 from dotmap import DotMap
 
-from torch_mate.lightning.build_transform import build_transform
-
-PossibleTransform = Union[transforms.Compose, nn.Identity, None]
-
-def create_state_transforms(task_stage_cfg: DotMap, common_pre_transforms: PossibleTransform, common_post_transforms: PossibleTransform):
-    stage_transforms = []
-
-    if common_pre_transforms:
-        stage_transforms.append(common_pre_transforms)
-
-    if task_stage_cfg and task_stage_cfg.transforms:
-        stage_transforms.append(build_transform(task_stage_cfg.transforms))
-
-    if common_post_transforms:
-        stage_transforms.append(common_post_transforms)
-    
-    if len(stage_transforms) == 0:
-        return None
-
-    if len(stage_transforms) == 1:
-        return stage_transforms[0]
-
-    return transforms.Compose(stage_transforms)
-
-
-
-def build_data_loader_kwargs(task_stage_cfg: DotMap, data_loaders_cfg: DotMap, stage: str):
-    data_loaders_cfg_dict = data_loaders_cfg.toDict()
-
-    kwargs = data_loaders_cfg_dict['default'] if 'default' in data_loaders_cfg else {}
-
-    if stage in data_loaders_cfg_dict:
-        for (key, value) in data_loaders_cfg_dict[stage].items():
-            kwargs[key] = value
-
-    if task_stage_cfg:
-        task_stage_cfg_dict = task_stage_cfg.toDict()
-
-        # Only allow batch size and shuffle to pass through for now
-        ALLOWED_KWARGS = ['batch_size', 'shuffle']
-
-        for key in ALLOWED_KWARGS:
-            if key in task_stage_cfg_dict:
-                kwargs[key] = task_stage_cfg_dict[key]
-    
-    return kwargs
-
+from torch_mate.lightning.utils import build_data_loader_kwargs, create_state_transforms, build_transform
 
 class ConfigurableLightningDataModule(L.LightningDataModule):
     def __init__(self, cfg: DotMap):
@@ -95,14 +45,19 @@ class ConfigurableLightningDataModule(L.LightningDataModule):
     def predict_dataloader(self):
         return DataLoader(self.get_dataset('predict'), **self.test_dataloader_kwargs)
     
+    def reshape_batch_during_transfer(self, batch, dataloader_idx: int, moment: str):
+        return batch
+    
     def on_before_batch_transfer(self, batch, dataloader_idx: int):
         if hasattr(self, "post_transfer_batch_transform"):
-            batch = self.post_transfer_batch_transform(batch)
+            batch = self.reshape_batch_during_transfer(batch, dataloader_idx, "before")
+            batch = self.post_transfer_batch_transform()
         
         return batch
     
     def on_after_batch_transfer(self, batch, dataloader_idx: int):
         if hasattr(self, "pre_transfer_batch_transform"):
+            batch = self.reshape_batch_during_transfer(batch, dataloader_idx, "after")
             batch = self.pre_transfer_batch_transform(batch)
         
         return batch
