@@ -73,6 +73,13 @@ class ConfigurableLightningDataModule(L.LightningDataModule):
         self.val_transforms = create_state_transforms(cfg.task.val, common_pre_transforms, common_post_transforms)
         self.test_transforms = create_state_transforms(cfg.task.test, common_pre_transforms, common_post_transforms)
 
+        if cfg.task.transforms and cfg.task.transforms.batch:
+            if cfg.task.transforms.batch.pre:
+                self.pre_transfer_batch_transform = build_transform(cfg.task.transforms.batch.pre)
+            
+            if cfg.task.transforms.batch.post:
+                self.post_transfer_batch_transform = build_transform(cfg.task.transforms.batch.post)
+
     def get_dataset(self, phase: str):
         raise NotImplementedError
 
@@ -87,4 +94,16 @@ class ConfigurableLightningDataModule(L.LightningDataModule):
     
     def predict_dataloader(self):
         return DataLoader(self.get_dataset('predict'), **self.test_dataloader_kwargs)
+    
+    def on_before_batch_transfer(self, batch, dataloader_idx: int):
+        if hasattr(self, "post_transfer_batch_transform"):
+            batch = self.post_transfer_batch_transform(batch)
+        
+        return batch
+    
+    def on_after_batch_transfer(self, batch, dataloader_idx: int):
+        if hasattr(self, "pre_transfer_batch_transform"):
+            batch = self.pre_transfer_batch_transform(batch)
+        
+        return batch
     

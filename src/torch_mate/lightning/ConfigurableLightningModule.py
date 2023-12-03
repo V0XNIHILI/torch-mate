@@ -12,7 +12,6 @@ from dotmap import DotMap
 
 from torch_mate.utils import get_class, calc_accuracy
 
-from torch_mate.lightning.build_transform import build_transform
 
 class ConfigurableLightningModule(L.LightningModule):
     def __init__(self, cfg: DotMap, model: Optional[nn.Module] = None):
@@ -23,13 +22,6 @@ class ConfigurableLightningModule(L.LightningModule):
 
         self.model = model if model else get_class(torchvision.models, cfg.model.name)(**cfg.model.cfg.toDict())
         self.loss = get_class(nn, cfg.criterion.name)()
-
-        if cfg.task.transforms and cfg.task.transforms.batch:
-            if cfg.task.transforms.batch.pre:
-                self.pre_transfer_batch_transform = build_transform(cfg.task.transforms.batch.pre)
-            
-            if cfg.task.transforms.batch.post:
-                self.post_transfer_batch_transform = build_transform(cfg.task.transforms.batch.post)
 
     def configure_optimizers(self) -> OptimizerLRScheduler:
         optimizer = get_class(optim, self.cfg.optimizer.name)(self.model.parameters(),  **self.cfg.optimizer.cfg.toDict())
@@ -67,16 +59,7 @@ class ConfigurableLightningModule(L.LightningModule):
 
     def test_step(self, batch, batch_idx):
         return self.generic_step(batch, batch_idx, "test")
-
-    def on_before_batch_transfer(self, batch, dataloader_idx: int):
-        if hasattr(self, "post_transfer_batch_transform"):
-            batch = self.post_transfer_batch_transform(batch)
-        
-        return batch
     
-    def on_after_batch_transfer(self, batch, dataloader_idx: int):
-        if hasattr(self, "pre_transfer_batch_transform"):
-            batch = self.pre_transfer_batch_transform(batch)
-        
-        return batch
-
+    def predict_step(self, batch, batch_idx):
+        # TODO: make sure that predict step works even when there are no labels
+        return self.generic_step(batch, batch_idx, "predict")
