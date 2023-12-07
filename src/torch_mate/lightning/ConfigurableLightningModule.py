@@ -13,9 +13,9 @@ from torch_mate.utils import get_class
 
 class ConfigurableLightningModule(L.LightningModule):
     def __init__(self, cfg: Dict):
-        """Lightweight wrapper around PyTorch LightningModule that adds support for a configuration dictionary.
-
-        Adds the following three attributes:
+        """Lightweight wrapper around PyTorch Lightning LightningModule that adds support for a configuration dictionary.
+        Based on this configuration, it creates the model, criterion, optimizer, and scheduler. Overall, compared to the
+        PyTorch Lightning LightningModule, the following three attributes are added:
         
         - self.model: the created model
         - self.criterion: the created criterion
