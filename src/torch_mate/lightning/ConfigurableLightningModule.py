@@ -8,7 +8,7 @@ import torchvision
 import lightning as L
 from pytorch_lightning.utilities.types import OptimizerLRScheduler
 
-from torch_mate.utils import get_class, calc_accuracy
+from torch_mate.utils import get_class
 
 
 class ConfigurableLightningModule(L.LightningModule):
@@ -28,8 +28,6 @@ class ConfigurableLightningModule(L.LightningModule):
         - self.validation_step(self, batch, batch_idx): calls self.generic_step(batch, batch_idx, "val")
         - self.test_step(self, batch, batch_idx): calls self.generic_step(batch, batch_idx, "test")
         - self.predict_step(self, batch, batch_idx): calls self.generic_step(batch, batch_idx, "predict")
-
-        As a baseline, self.generic_step support (top-k) classification and regression tasks.
 
         Args:
             cfg (Dict): configuration dictionary
@@ -56,21 +54,7 @@ class ConfigurableLightningModule(L.LightningModule):
         return self.model(x)
     
     def generic_step(self, batch, batch_idx, phase: str):
-        x, y = batch
-
-        output = self(x)
-
-        loss = self.criterion(*output if isinstance(output, tuple) else output, y)
-
-        prog_bar = phase == 'val'
-
-        self.log(f"{phase}/loss", loss, prog_bar=prog_bar)
-
-        # TODO: add top-k support
-        if self.hparams.task.get("classification", False) == True:
-            self.log(f"{phase}/accuracy", calc_accuracy(output, y), prog_bar=prog_bar)
-
-        return loss
+        raise NotImplementedError
     
     def training_step(self, batch, batch_idx):
         return self.generic_step(batch, batch_idx, "train")
