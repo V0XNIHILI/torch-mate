@@ -1,10 +1,21 @@
+from typing import Dict
+
+import copy
+
 from lightning.pytorch.callbacks.early_stopping import EarlyStopping
 
-from dotmap import DotMap
+def build_trainer_kwargs(cfg: Dict) -> Dict:
+    """Lightweight function to build the kwargs for a PyTorch Lightning Trainer from a configuration dictionary.
 
-def build_trainer_kwargs(cfg: DotMap):
-    if cfg.training:
-        cfg_dict = cfg.training.toDict()
+    Args:
+        cfg (Dict): configuration dictionary
+
+    Returns:
+        Dict: kwargs for a PyTorch Lightning Trainer
+    """
+
+    if "training" in cfg:
+        cfg_dict = copy.deepcopy(cfg["training"])
 
         # Add support for early stopping
         if 'early_stopping' in cfg_dict:
