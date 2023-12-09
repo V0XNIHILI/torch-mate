@@ -17,17 +17,17 @@ class ConfigurableLightningModule(L.LightningModule):
         Based on this configuration, it creates the model, criterion, optimizer, and scheduler. Overall, compared to the
         PyTorch Lightning LightningModule, the following three attributes are added:
         
-        - self.model: the created model
-        - self.criterion: the created criterion
-        - self.generic_step(self, batch, batch_idx, phase): a generic step function that is shared across all steps (train, val, test, predict)
+        - `self.model`: the created model
+        - `self.criterion`: the created criterion
+        - `self.generic_step(self, batch, batch_idx, phase)`: a generic step function that is shared across all steps (train, val, test, predict)
 
         Based on these, the following methods are automatically implemented:
 
-        - self.forward(self, x): calls self.model(x)
-        - self.training_step(self, batch, batch_idx): calls self.generic_step(batch, batch_idx, "train")
-        - self.validation_step(self, batch, batch_idx): calls self.generic_step(batch, batch_idx, "val")
-        - self.test_step(self, batch, batch_idx): calls self.generic_step(batch, batch_idx, "test")
-        - self.predict_step(self, batch, batch_idx): calls self.generic_step(batch, batch_idx, "predict")
+        - `self.forward(self, x)`: calls `self.model(x)`
+        - `self.training_step(self, batch, batch_idx)`: calls `self.generic_step(batch, batch_idx, "train")`
+        - `self.validation_step(self, batch, batch_idx)`: calls `self.generic_step(batch, batch_idx, "val")`
+        - `self.test_step(self, batch, batch_idx)`: calls `self.generic_step(batch, batch_idx, "test")`
+        - `self.predict_step(self, batch, batch_idx)`: calls `self.generic_step(batch, batch_idx, "predict")`
 
         Args:
             cfg (Dict): configuration dictionary
