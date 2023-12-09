@@ -1,18 +1,31 @@
+import torch.nn as nn
+
+from torch_mate.lightning import ConfigurableLightningModule
+
 from torch_mate.utils import calc_accuracy
 
-def generic_step(self, batch, batch_idx, phase: str):
+def process_supervised_batch(model: nn.Module, batch, criterion: nn.Module):
     x, y = batch
 
-    output = self(x)
+    output = model(x)
 
-    loss = self.criterion(*output if isinstance(output, tuple) else output, y)
+    if isinstance(output, tuple):
+        loss = criterion(*output, y)
+    else:
+        loss = criterion(output, y)
+
+    return output, loss
+
+
+def generic_step(module: ConfigurableLightningModule, batch, batch_idx, phase: str):
+    output, loss = process_supervised_batch(module, batch, module.criterion)
 
     prog_bar = phase == 'val'
 
-    self.log(f"{phase}/loss", loss, prog_bar=prog_bar)
+    module.log(f"{phase}/loss", loss, prog_bar=prog_bar)
 
     # TODO: add top-k support
-    if self.hparams.task.get("classification", False) == True:
-        self.log(f"{phase}/accuracy", calc_accuracy(output, y), prog_bar=prog_bar)
+    if module.hparams.task.get("classification", False) == True:
+        module.log(f"{phase}/accuracy", calc_accuracy(output, batch[1]), prog_bar=prog_bar)
 
     return loss
