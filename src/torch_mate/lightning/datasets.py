@@ -8,9 +8,10 @@ from torch_mate.lightning import ConfigurableLightningDataModule
 from torch.utils.data import random_split
 from torch_mate.data.utils import Transformed
 
+
 class MNISTData(ConfigurableLightningDataModule):
     def __init__(self, cfg: Dict, root: str, download: bool = True):
-        ConfigurableLightningDataModule.__init__(self, cfg)
+        super().__init__(cfg)
 
         self.root = root
         self.download = download
@@ -29,6 +30,8 @@ class MNISTData(ConfigurableLightningDataModule):
             self.mnist_val = Transformed(mnist_val, self.val_transforms, self.val_target_transforms)
         elif stage == 'test':
             self.mnist_test = MNIST(self.root, train=False, transform=self.test_transforms, target_transform=self.test_target_transforms, download=self.download)
+        else:
+            raise ValueError(f"Unsupported stage: {stage}")
 
     def get_dataset(self, phase: str):
         if phase == 'train':
@@ -37,3 +40,5 @@ class MNISTData(ConfigurableLightningDataModule):
             return self.mnist_val
         elif phase == 'test':
             return self.mnist_test
+        
+        raise ValueError(f"Unsupported phase: {phase}")
