@@ -1,10 +1,7 @@
-from typing import List, NamedTuple, Dict, Union
-
-from dataclasses import dataclass
+from typing import List, Dict, Union
 
 import torchvision.transforms as transforms
 import torchvision.transforms as transforms
-import torch.nn as nn
 
 from torch_mate.utils import get_class
 
@@ -42,17 +39,23 @@ def create_state_transforms(task_stage_cfg: Dict, common_pre_transforms: BuiltTr
     return transforms.Compose(stage_transforms)
 
 
+# Only allow batch size and shuffle to pass through for now
+ALLOWED_KWARGS = ['batch_size', 'shuffle']
+
+
 def build_data_loader_kwargs(task_stage_cfg: Dict, data_loaders_cfg: Dict, stage: str) -> Dict:
-    kwargs = data_loaders_cfg.get("default", {})
+    # Need to copy, else data from a stage will leak into the default dict,
+    # and this data will leak into other stages as the kwargs are built.
+    kwargs = data_loaders_cfg.get("default", {}).copy()
 
     if stage in data_loaders_cfg:
         for (key, value) in data_loaders_cfg[stage].items():
             kwargs[key] = value
 
-    # Only allow batch size and shuffle to pass through for now
-    ALLOWED_KWARGS = ['batch_size', 'shuffle']
-
     for key in ALLOWED_KWARGS:
+        if key in kwargs:
+            raise ValueError(f"Cannot override {key} from hparams.data_loaders configuration")
+        
         if key in task_stage_cfg:
             kwargs[key] = task_stage_cfg[key]
     

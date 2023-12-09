@@ -9,6 +9,7 @@ from torch_mate.lightning.utils import build_data_loader_kwargs, create_state_tr
 STAGES = ['train', 'val', 'test', 'predict']
 MOMENTS = ["pre", "post"]
 
+
 class ConfigurableLightningDataModule(L.LightningDataModule):
     train_dataloader_kwargs: Dict
     val_dataloader_kwargs: Dict
@@ -97,7 +98,7 @@ class ConfigurableLightningDataModule(L.LightningDataModule):
         return DataLoader(self.get_dataset('test'), **self.test_dataloader_kwargs)
     
     def predict_dataloader(self):
-        return DataLoader(self.get_dataset('predict'), **self.test_dataloader_kwargs)
+        return DataLoader(self.get_dataset('predict'), **self.predict_dataloader_kwargs)
     
     def reshape_batch_during_transfer(self, batch, dataloader_idx: int, moment: str):
         return batch
@@ -115,4 +116,3 @@ class ConfigurableLightningDataModule(L.LightningDataModule):
             batch = self.pre_transfer_batch_transform(batch)
         
         return batch
-    
