@@ -11,6 +11,8 @@ from torch_mate.utils import calc_accuracy
 
 from torch_mate.flow.main import OptionalBatchTransform
 
+from torch_mate.lightning import ConfigurableLightningModule
+
 MetaSample = Tuple[Tuple[torch.Tensor, torch.Tensor],
                                             Tuple[torch.Tensor, torch.Tensor]]
 MetaBatch = List[MetaSample]
@@ -51,12 +53,14 @@ def few_shot_nearest_neighbor(embedder: nn.Module,
 
         if metric.endswith('-squared'):
             similarities = -similarities ** 2
-        elif not metric.endswith('euclidean'):
+        elif metric != 'euclidean':
             raise ValueError(f'Unknown metric: {metric}. {UNKNOWN_METRIC_MESSAGE}')
     elif metric == 'logistic-regression':
+        # TODO: set random state
         clf = LogisticRegression(random_state=0).fit(support_embeddings.cpu().numpy(), train_labels.cpu().numpy())
         similarities = torch.tensor(clf.predict_proba(query_embeddings.cpu().numpy()), device=evaluation_labels.device)
-    else:    
+    else:
+        # TODO: probably some of these can be parallelized
         similarities = torch.empty(
             (total_queries, support_embeddings.size(0)),
             device=evaluation_labels.device)
@@ -69,8 +73,9 @@ def few_shot_nearest_neighbor(embedder: nn.Module,
                 similarities[i] = torch.matmul(support_embeddings,
                                                     query_embeddings[i])
             elif metric == 'cosine':
+                # TODO: figure out if this is correct
                 similarities[i] = F.cosine_similarity(
-                    query_embeddings[i], support_embeddings)
+                    query_embeddings[i].view(1, -1), support_embeddings)
             else:
                 raise ValueError(f'Unknown metric: {metric}. {UNKNOWN_METRIC_MESSAGE}')
 
@@ -94,7 +99,7 @@ def few_shot_nearest_neighbor(embedder: nn.Module,
     return evaluation_error, evaluation_accuracy
 
 
-def metric_learning_process_batch(embedder: nn.Module, batch: MetaBatch,
+def process_metric_learning_batch(embedder: nn.Module, batch: MetaBatch,
                                 metric: str, average_support_embeddings: bool,
                                 batch_transform: OptionalBatchTransform,
                                 loss: nn.Module):
@@ -112,19 +117,23 @@ def metric_learning_process_batch(embedder: nn.Module, batch: MetaBatch,
             ((X_train[task_idx], X_test[task_idx]),
                 (y_train[task_idx], y_test[task_idx])), batch_transform)
 
-        meta_error += error.item()
+        meta_error += error
         meta_accuracies.append(accuracy.item())
 
     meta_accuracies = np.array(meta_accuracies)
 
-    return meta_error / meta_batch_size, (np.mean(meta_accuracies), 1.96 * np.std(meta_accuracies) / np.sqrt(meta_batch_size))
+    # Return float values instead of np.float64 types as this causes issues with logging
+    # these values with PyTorch Lightning on macOS with MPS support.
+    accuracy = float(np.mean(meta_accuracies))
+    confidence_interval = 1.96 * float(np.std(meta_accuracies) / np.sqrt(meta_batch_size))
 
-from torch_mate.lightning import ConfigurableLightningModule
+    return meta_error / meta_batch_size, (accuracy, confidence_interval)
+
 
 def generic_step(module: ConfigurableLightningModule, batch, batch_idx, phase: str):
-    loss, (accuracy, confidence_interval) = metric_learning_process_batch(
+    loss, (accuracy, confidence_interval) = process_metric_learning_batch(
         module, batch, module.hparams.few_shot["cfg"]["metric"],
-        module.hparams.few_shot["cfg"]["metric.average_support_embeddings"],
+        module.hparams.few_shot["cfg"]["average_support_embeddings"],
         None, module.criterion)
     
     module.log_dict({
