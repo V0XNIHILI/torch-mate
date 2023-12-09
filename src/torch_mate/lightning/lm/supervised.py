@@ -4,4 +4,4 @@ import torch_mate.lightning.lm.functional.supervised as LFSupervised
 
 class SupervisedLearner(ConfigurableLightningModule):
     def generic_step(self, batch, batch_idx, phase: str):
-        LFSupervised.generic_step(self, batch, batch_idx, phase)
+        return LFSupervised.generic_step(self, batch, batch_idx, phase)
