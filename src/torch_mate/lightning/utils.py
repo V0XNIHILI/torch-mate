@@ -6,32 +6,29 @@ import torchvision.transforms as transforms
 import torchvision.transforms as transforms
 import torch.nn as nn
 
-from dotmap import DotMap
-
 from torch_mate.utils import get_class
 
-PossibleTransform = Union[transforms.Compose, nn.Identity, None]
-
-@dataclass
-class DataAugmentation(NamedTuple):
-    name: str
-    cfg: Dict
+BuiltTransform = Union[transforms.Compose, None]
+StateTransform = Union[BuiltTransform, callable]
 
 
-def build_transform(augmentations: List[DataAugmentation]):
+def build_transform(augmentations: List[Dict]):
+    if len(augmentations) == 0:
+        return None
+
     return transforms.Compose(
-        [get_class(transforms, aug.name)(**(aug.cfg if aug.cfg else {})) for aug in augmentations]  
+        [get_class(transforms, aug["name"])(**(aug.get("cfg", {}))) for aug in augmentations]  
     )
 
 
-def create_state_transforms(task_stage_cfg: DotMap, common_pre_transforms: PossibleTransform, common_post_transforms: PossibleTransform):
+def create_state_transforms(task_stage_cfg: Dict, common_pre_transforms: BuiltTransform, common_post_transforms: BuiltTransform) -> StateTransform:
     stage_transforms = []
 
     if common_pre_transforms:
         stage_transforms.append(common_pre_transforms)
 
-    if task_stage_cfg and task_stage_cfg.transforms:
-        stage_transforms.append(build_transform(task_stage_cfg.transforms))
+    if task_stage_cfg.get("transforms", None):
+        stage_transforms.append(build_transform(task_stage_cfg["transforms"]))
 
     if common_post_transforms:
         stage_transforms.append(common_post_transforms)
@@ -45,23 +42,19 @@ def create_state_transforms(task_stage_cfg: DotMap, common_pre_transforms: Possi
     return transforms.Compose(stage_transforms)
 
 
-def build_data_loader_kwargs(task_stage_cfg: DotMap, data_loaders_cfg: DotMap, stage: str):
-    data_loaders_cfg_dict = data_loaders_cfg.toDict()
+def build_data_loader_kwargs(task_stage_cfg: Dict, data_loaders_cfg: Dict, stage: str) -> Dict:
+    kwargs = data_loaders_cfg.get("default", {})
 
-    kwargs = data_loaders_cfg_dict['default'] if 'default' in data_loaders_cfg else {}
-
-    if stage in data_loaders_cfg_dict:
-        for (key, value) in data_loaders_cfg_dict[stage].items():
+    if stage in data_loaders_cfg:
+        for (key, value) in data_loaders_cfg[stage].items():
             kwargs[key] = value
 
-    if task_stage_cfg:
-        task_stage_cfg_dict = task_stage_cfg.toDict()
+    # Only allow batch size and shuffle to pass through for now
+    ALLOWED_KWARGS = ['batch_size', 'shuffle']
 
-        # Only allow batch size and shuffle to pass through for now
-        ALLOWED_KWARGS = ['batch_size', 'shuffle']
-
-        for key in ALLOWED_KWARGS:
-            if key in task_stage_cfg_dict:
-                kwargs[key] = task_stage_cfg_dict[key]
+    for key in ALLOWED_KWARGS:
+        if key in task_stage_cfg:
+            kwargs[key] = task_stage_cfg[key]
     
     return kwargs
+
