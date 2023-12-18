@@ -28,6 +28,7 @@ class ConfigurableLightningModule(L.LightningModule):
         - `self.validation_step(self, batch, batch_idx)`: calls `self.generic_step(batch, batch_idx, "val")`
         - `self.test_step(self, batch, batch_idx)`: calls `self.generic_step(batch, batch_idx, "test")`
         - `self.predict_step(self, batch, batch_idx)`: calls `self.generic_step(batch, batch_idx, "predict")`
+        - `self.configure_optimizers(self)`: creates the optimizer and scheduler based on the configuration dictionary
 
         Args:
             cfg (Dict): configuration dictionary
@@ -37,18 +38,21 @@ class ConfigurableLightningModule(L.LightningModule):
 
         self.save_hyperparameters(cfg)
 
-        self.model = get_class(torchvision.models, self.hparams.model["name"])(**self.hparams.model["cfg"])
+        self.model = get_class(None, self.hparams.model["name"])(**self.hparams.model["cfg"])
         self.criterion = get_class(nn, self.hparams.criterion["name"])()
 
     def configure_optimizers(self) -> OptimizerLRScheduler:
-        # TODO: support multiple optimizers and schedulers
-        optimizer = get_class(optim, self.hparams.optimizer["name"])(self.model.parameters(),  **self.hparams.optimizer["cfg"])
-        scheduler = get_class(optim.lr_scheduler, self.hparams.lr_scheduler["name"])(optimizer, **self.hparams.lr_scheduler["cfg"]) if "lr_scheduler" in self.hparams else None
+        # TODO: support multiple schedulers
+        opt_configs = self.hparams.optimizer if type(self.hparams.optimizer) is list else [self.hparams.optimizer]
+
+        optimizers = [get_class(optim, opt_cfg["name"])(self.model.parameters(),  **opt_cfg["cfg"]) for opt_cfg in opt_configs]
+
+        scheduler = get_class(optim.lr_scheduler, self.hparams.lr_scheduler["name"])(optimizers[0], **self.hparams.lr_scheduler["cfg"]) if "lr_scheduler" in self.hparams else None
 
         if scheduler is not None:
-            return [optimizer], [scheduler]
+            return optimizers, [scheduler]
         
-        return optimizer
+        return optimizers
     
     def forward(self, x):
         return self.model(x)
