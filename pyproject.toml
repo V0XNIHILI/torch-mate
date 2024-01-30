@@ -21,7 +21,7 @@ dependencies = [
   'tqdm',
   'hasy',
   'torchsummary',
-  'early-stopping @ git+https://github.com/V0XNIHILI/early-stopping@main'
+  'early-stopping @ git+https://github.com/V0XNIHILI/early-stopping@master'
 ]
 
 [build-system]
