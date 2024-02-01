@@ -4,15 +4,19 @@ from torch_mate.lightning import ConfigurableLightningModule
 
 from torch_mate.utils import calc_accuracy
 
+
+def compute_loss(criterion: nn.Module, output, target):
+    if isinstance(output, tuple):
+        return criterion(*output, target)
+    else:
+        return criterion(output, target)
+
+
 def process_supervised_batch(model: nn.Module, batch, criterion: nn.Module):
     x, y = batch
 
     output = model(x)
-
-    if isinstance(output, tuple):
-        loss = criterion(*output, y)
-    else:
-        loss = criterion(output, y)
+    loss = compute_loss(criterion, output, y)
 
     return output, loss
 
