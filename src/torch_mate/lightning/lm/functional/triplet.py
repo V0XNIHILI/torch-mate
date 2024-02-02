@@ -1,9 +1,10 @@
 import torch
+import torch.nn as nn
 import torch.nn.functional as F
 
 from torch_mate.lightning import ConfigurableLightningModule
 
-def forward(module: ConfigurableLightningModule, x):
+def forward(module: nn.Module, x):
     output = module(torch.cat(x))
 
     anchor_output, positive_output, negative_output = output.chunk(3)

@@ -60,4 +60,3 @@ def build_data_loader_kwargs(task_stage_cfg: Dict, data_loaders_cfg: Dict, stage
             kwargs[key] = task_stage_cfg[key]
     
     return kwargs
-

@@ -1,6 +1,7 @@
-from torch.utils.data import Dataset
-
 import random
+
+import torch
+from torch.utils.data import Dataset
 
 from torch_mate.data.utils.Triplet import Triplet
 
@@ -18,4 +19,4 @@ class Siamese(Triplet):
         else:
             samples = samples[0::2]
         
-        return samples, same_label
+        return samples, torch.tensor([same_label]).float()
