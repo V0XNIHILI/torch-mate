@@ -86,7 +86,7 @@ def evaluate(model: nn.Module,
                                                        extra_loss)
 
             eval_error += error.detach()
-            eval_accuracies.append(accuracy)
+            eval_accuracies.append(accuracy.cpu())
 
     eval_accuracies = np.array(eval_accuracies)
 
@@ -150,7 +150,12 @@ def main(
     scheduler = get_class(optim.lr_scheduler, cfg.lr_scheduler.name)(
         opt, **cfg.lr_scheduler.cfg.toDict()) if cfg.lr_scheduler else None
 
-    loss = get_class(nn, cfg.criterion.name)()
+    loss = get_class(nn, cfg.criterion.name)
+
+    if cfg.criterion.cfg:
+        loss = loss(**cfg.criterion.cfg.toDict())
+    else:
+        loss = loss()
 
     stop_early = EarlyStopping(*cfg.early_stopping.cfg) if cfg.early_stopping else None
 
