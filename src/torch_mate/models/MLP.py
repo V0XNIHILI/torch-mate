@@ -10,6 +10,15 @@ class MLP(nn.Sequential):
                  activation_kwargs: Optional[Dict[str, Any]] = None,
                  with_last_activation: bool = False,
                  dropout: float = 0.0):
+        """Create a multi-layer perceptron (MLP) of given size(s) and activation function.
+
+        Args:
+            layer_sizes (List[int]): The sizes of the layers, where the first entry determines the input size of the MLP.
+            activation_function (str, optional): Which `nn.*` activation function to use. Defaults to 'ReLU'.
+            activation_kwargs (Optional[Dict[str, Any]], optional): Arguments to pass to activation function constructor. Defaults to None.
+            with_last_activation (bool, optional): Whether to have an activation function after the last fully connected layer. Defaults to False.
+            dropout (float, optional): How much dropout to use. Defaults to 0.0.
+        """
         layers = []
 
         for i in range(len(layer_sizes) - 1):
