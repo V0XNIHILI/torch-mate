@@ -6,3 +6,4 @@ from torch_mate.data.transforms.DiscreteRandomCoordinateRotation import \
 from torch_mate.data.transforms.DiscreteRandomRotation import \
     DiscreteRandomRotation
 from torch_mate.data.transforms.TimeShift import TimeShift
+from torch_mate.data.transforms.RandomResample import RandomResample
