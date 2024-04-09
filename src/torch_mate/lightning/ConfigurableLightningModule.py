@@ -3,8 +3,6 @@ from typing import Dict
 import torch.nn as nn
 import torch.optim as optim
 
-import torchvision
-
 import lightning as L
 from pytorch_lightning.utilities.types import OptimizerLRScheduler
 
@@ -39,7 +37,12 @@ class ConfigurableLightningModule(L.LightningModule):
         self.save_hyperparameters(cfg)
 
         self.model = get_class(None, self.hparams.model["name"])(**self.hparams.model["cfg"])
-        self.criterion = get_class(nn, self.hparams.criterion["name"])()
+        criterion_class = get_class(nn, self.hparams.criterion["name"])
+
+        if "cfg" in self.hparams.criterion:
+            self.criterion = criterion_class(**self.hparams.criterion["cfg"])
+        else:
+            self.criterion = criterion_class()
 
     def configure_optimizers(self) -> OptimizerLRScheduler:
         # TODO: support multiple schedulers
