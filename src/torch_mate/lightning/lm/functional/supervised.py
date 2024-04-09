@@ -29,7 +29,7 @@ def generic_step(module: ConfigurableLightningModule, batch, batch_idx, phase: s
     module.log(f"{phase}/loss", loss, prog_bar=prog_bar)
 
     # TODO: add top-k support
-    if module.hparams.task.get("classification", False) == True:
+    if module.hparams.learner.get("classification", False) == True:
         module.log(f"{phase}/accuracy", calc_accuracy(output, batch[1]), prog_bar=prog_bar)
 
     return loss

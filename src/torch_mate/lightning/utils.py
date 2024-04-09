@@ -1,13 +1,15 @@
 from typing import List, Dict, Union, Optional
+import copy
 from copy import deepcopy
 
 import torchvision.transforms as transforms
 import torchvision.transforms as transforms
 
 from lightning import Trainer
+from lightning.pytorch.callbacks.early_stopping import EarlyStopping
 
+import torch_mate
 from torch_mate.utils import get_class
-from torch_mate.lightning import build_trainer_kwargs
 
 
 BuiltTransform = Union[transforms.Compose, None]
@@ -56,7 +58,30 @@ def build_data_loader_kwargs(data_loaders_cfg: Dict, stage: str) -> Dict:
     return kwargs
 
 
-def get_stack(cfg: Dict, trainer_kwargs: Optional[Dict], omit_dataset_module_cfg: bool = False):
+def build_trainer_kwargs(cfg: Dict) -> Dict:
+    """Lightweight function to build the kwargs for a PyTorch Lightning Trainer from a configuration dictionary.
+
+    Args:
+        cfg (Dict): configuration dictionary
+
+    Returns:
+        Dict: kwargs for a PyTorch Lightning Trainer
+    """
+
+    if "training" in cfg:
+        cfg_dict = copy.deepcopy(cfg["training"])
+
+        # Add support for early stopping
+        if 'early_stopping' in cfg_dict:
+            cfg_dict['callbacks'] = [EarlyStopping(**cfg_dict['early_stopping'])]
+            del cfg_dict['early_stopping']
+
+        return cfg_dict
+
+    return {}
+
+
+def configure_stack(cfg: Dict, trainer_kwargs: Optional[Dict], omit_dataset_module_cfg: bool = True):
     trainer_cfg = build_trainer_kwargs(cfg)
 
     if trainer_kwargs is not None:
@@ -66,7 +91,7 @@ def get_stack(cfg: Dict, trainer_kwargs: Optional[Dict], omit_dataset_module_cfg
        **trainer_cfg
     )
 
-    data_class = get_class(torch_mate.lightning, cfg["dataset"]["name"])
+    data_class = get_class(torch_mate.lightning.datasets, cfg["dataset"]["name"])
 
     if "kwargs" in cfg["dataset"]:
         data = data_class(cfg, **cfg["dataset"]["kwargs"])
@@ -78,7 +103,7 @@ def get_stack(cfg: Dict, trainer_kwargs: Optional[Dict], omit_dataset_module_cfg
     if omit_dataset_module_cfg:
         cfg["dataset"].pop("kwargs", None)
 
-    model_class = get_class(torch_mate.lightning, cfg["learner"]["name"])
+    model_class = get_class(torch_mate.lightning.lm, cfg["learner"]["name"])
 
     if "kwargs" in cfg["learner"]:
         model = model_class(cfg, **cfg["learner"]["kwargs"])

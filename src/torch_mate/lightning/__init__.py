@@ -1,3 +1,3 @@
 from .ConfigurableLightningModule import ConfigurableLightningModule
 from .ConfigurableLightningDataModule import ConfigurableLightningDataModule
-from .build_trainer_kwargs import build_trainer_kwargs
+from .utils import configure_stack
