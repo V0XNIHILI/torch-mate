@@ -11,6 +11,21 @@ from torch_mate.data.utils import Transformed
 
 class MNISTData(ConfigurableLightningDataModule):
     def __init__(self, cfg: Dict, root: str, download: bool = True):
+        """MNIST dataset.
+
+        Configuration:
+        ```yaml
+        cfg.dataset.cfg:
+            # Percentage of the training set to use for validation (float). Defaults to 500/60000.
+            val_percentage (float): 0.1
+        ```
+
+        Args:
+            cfg (Dict): Configuration dictionary.
+            root (str): Root directory for the dataset.
+            download (bool, optional): Whether to download the dataset or not. Defaults to True.
+        """
+
         super().__init__(cfg)
 
         self.root = root
@@ -20,10 +35,10 @@ class MNISTData(ConfigurableLightningDataModule):
         if stage == 'fit' or stage == 'validate':
             mnist_full = MNIST(self.root, train=True, download=self.download)
             
-            train_percentage = self.hparams.task["train"]["percentage"]
+            val_percentage = self.hparams.dataset.get("cfg", {}).get("val_percentage", 500/60000)
 
             mnist_train, mnist_val = random_split(
-                mnist_full, [train_percentage, 1-train_percentage], generator=torch.Generator().manual_seed(self.hparams.seed)
+                mnist_full, [1 - val_percentage, val_percentage], generator=torch.Generator().manual_seed(self.hparams.seed)
             )
 
             self.mnist_train = Transformed(mnist_train, self.train_transforms, self.train_target_transforms)

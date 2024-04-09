@@ -53,33 +53,38 @@ class ConfigurableLightningDataModule(L.LightningDataModule):
 
         self.save_hyperparameters(cfg)
 
-        common_pre_transforms, common_post_transforms = [build_transform(self.hparams.task.get("transforms", {}).get(m, [])) for m in MOMENTS]
+        common_pre_transforms, common_post_transforms = [build_transform(self.hparams.dataset.get("transforms", {}).get(m, [])) for m in MOMENTS]
 
         data_loaders_cfg = self.hparams.get("data_loaders", {})
         
-        # TODO: add support for predict dataloader kwargs
-        for stage in STAGES:
-            task_stage_cfg = self.hparams.task.get(stage, {})
+        if "transforms" in self.hparams.dataset:
+            # TODO: add support for predict dataloader kwargs
+            for stage in STAGES:
+                task_stage_cfg = self.hparams.dataset["transforms"].get(stage, {})
 
-            setattr(self, f"{stage}_dataloader_kwargs", build_data_loader_kwargs(
-                data_loaders_cfg,
-                stage)
-            )
+                setattr(self, f"{stage}_dataloader_kwargs", build_data_loader_kwargs(
+                    data_loaders_cfg,
+                    stage)
+                )
 
-            setattr(self, f"{stage}_transforms", create_state_transforms(
-                task_stage_cfg,
-                common_pre_transforms, 
-                common_post_transforms
-            ))
+                setattr(self, f"{stage}_transforms", create_state_transforms(
+                    task_stage_cfg,
+                    common_pre_transforms, 
+                    common_post_transforms
+                ))
 
-            setattr(self, f"{stage}_target_transforms", build_transform(
-                task_stage_cfg.get("target_transforms", [])
-            ))
+                setattr(self, f"{stage}_target_transforms", build_transform(
+                    task_stage_cfg.get("target_transforms", [])
+                ))
 
-        if self.hparams.task.get("transforms", {}).get("batch", None):
+        common_pre_batch_transforms, common_post_batch_transforms = [build_transform(self.hparams.dataset.get("batch_transforms", {}).get(m, [])) for m in MOMENTS]
+
+        if "batch_transforms" in self.hparams.dataset:
             for m in MOMENTS:
-                setattr(self, f"{m}_transfer_batch_transform", build_transform(
-                    self.hparams.task["transforms"]["batch"].get(m, [])
+                setattr(self, f"{stage}_transfer_batch_transform", create_state_transforms(
+                    self.hparams.dataset["batch_transforms"].get(m, {}),
+                    common_pre_batch_transforms, 
+                    common_post_batch_transforms
                 ))
         else:
             self.pre_transfer_batch_transform = None
@@ -92,8 +97,8 @@ class ConfigurableLightningDataModule(L.LightningDataModule):
         dataset = self.get_dataset(phase)
 
         # API for this entry in the configuration dict is up for change imo.
-        if "pre_load" in self.hparams.task.get("extra", {}):
-            if phase in self.hparams.task["extra"]["pre_load"]:
+        if "pre_load" in self.hparams.dataset.get("extra", {}):
+            if phase in self.hparams.dataset["extra"]["pre_load"]:
                 dataset = PreLoaded(dataset)
 
         if getattr(self, f"{phase}_transforms") is None or getattr(self, f"{phase}_target_transforms") is None:

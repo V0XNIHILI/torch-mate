@@ -94,14 +94,14 @@ def configure_stack(cfg: Dict, trainer_kwargs: Optional[Dict], omit_dataset_modu
     data_class = get_class(torch_mate.lightning.datasets, cfg["dataset"]["name"])
 
     if "kwargs" in cfg["dataset"]:
-        data = data_class(cfg, **cfg["dataset"]["kwargs"])
+        dataset_kwargs = deepcopy(cfg["dataset"]["kwargs"])
+
+        if omit_dataset_module_cfg:
+            cfg["dataset"].pop("kwargs", None)
+
+        data = data_class(cfg, **dataset_kwargs)
     else:
         data = data_class(cfg, )
-
-    cfg = deepcopy(cfg)
-
-    if omit_dataset_module_cfg:
-        cfg["dataset"].pop("kwargs", None)
 
     model_class = get_class(torch_mate.lightning.lm, cfg["learner"]["name"])
 
