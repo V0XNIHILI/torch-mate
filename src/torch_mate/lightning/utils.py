@@ -13,7 +13,7 @@ from torch_mate.utils import get_class
 
 
 BuiltTransform = Union[transforms.Compose, None]
-StateTransform = Union[BuiltTransform, callable]
+StageTransform = Union[BuiltTransform, callable]
 
 
 def build_transform(augmentations: List[Dict]):
@@ -25,7 +25,7 @@ def build_transform(augmentations: List[Dict]):
     )
 
 
-def create_state_transforms(task_stage_cfg: Dict, common_pre_transforms: BuiltTransform, common_post_transforms: BuiltTransform) -> StateTransform:
+def create_stage_transforms(task_stage_cfg: Dict, common_pre_transforms: BuiltTransform, common_post_transforms: BuiltTransform) -> StageTransform:
     stage_transforms = []
 
     if common_pre_transforms:

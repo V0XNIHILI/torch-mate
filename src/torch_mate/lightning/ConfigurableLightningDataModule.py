@@ -4,7 +4,7 @@ import lightning as L
 
 from torch.utils.data import DataLoader
 
-from torch_mate.lightning.utils import build_data_loader_kwargs, create_state_transforms, build_transform, BuiltTransform, StateTransform
+from torch_mate.lightning.utils import build_data_loader_kwargs, create_stage_transforms, build_transform, BuiltTransform, StageTransform
 from torch_mate.data.utils import Transformed, PreLoaded
 
 STAGES = ['train', 'val', 'test', 'predict']
@@ -12,23 +12,10 @@ MOMENTS = ["pre", "post"]
 
 
 class ConfigurableLightningDataModule(L.LightningDataModule):
-    train_dataloader_kwargs: Dict
-    val_dataloader_kwargs: Dict
-    test_dataloader_kwargs: Dict
-    predict_dataloader_kwargs: Dict
-
-    train_transforms: StateTransform
-    val_transforms: StateTransform
-    test_transforms: StateTransform
-    predict_transforms: StateTransform
-
-    train_target_transforms: BuiltTransform
-    val_target_transforms: BuiltTransform
-    test_target_transforms: BuiltTransform
-    predict_target_transforms: BuiltTransform
-
-    pre_transfer_batch_transform: BuiltTransform
-    post_transfer_batch_transform: BuiltTransform
+    train_batch_transforms: BuiltTransform
+    val_batch_transforms: BuiltTransform
+    test_batch_transforms: BuiltTransform
+    predict_batch_transforms: BuiltTransform
 
     def __init__(self, cfg: Dict):
         """Lightweight wrapper around PyTorch Lightning LightningDataModule that adds support for configuration via a dictionary.
@@ -53,42 +40,56 @@ class ConfigurableLightningDataModule(L.LightningDataModule):
 
         self.save_hyperparameters(cfg)
 
-        common_pre_transforms, common_post_transforms = [build_transform(self.hparams.dataset.get("transforms", {}).get(m, [])) for m in MOMENTS]
+        self.common_pre_transforms, self.common_post_transforms = [self.get_common_transform(m) for m in MOMENTS]
+        self.common_pre_batch_transforms, self.common_post_batch_transforms = [self.get_common_batch_transform(m) for m in MOMENTS]
 
+        for stage in STAGES:
+            setattr(self, f"{stage}_batch_transforms", self.get_batch_transform(stage))
+
+    def get_common_transform(self, moment: str):
+        return build_transform(self.hparams.dataset.get("transforms", {}).get(moment, []))
+    
+    def get_common_batch_transform(self, moment: str):
+        return build_transform(self.hparams.dataset.get("batch_transforms", {}).get(moment, []))
+
+    def get_transform(self, stage: str):
+        if "transforms" in self.hparams.dataset:
+            task_stage_cfg = self.hparams.dataset["transforms"].get(stage, {})
+
+            return create_stage_transforms(
+                task_stage_cfg,
+                self.common_pre_transforms, 
+                self.common_post_transforms
+            )
+        
+        return None
+    
+    def get_target_transform(self, stage: str):
+        if "target_transforms" in self.hparams.dataset:
+            task_stage_cfg = self.hparams.dataset["transforms"].get(stage, {})
+    
+            return build_transform(
+                task_stage_cfg.get("target_transforms", [])
+            )
+        
+        return None
+    
+    def get_batch_transform(self, stage: str):
+        if "batch_transforms" in self.hparams.dataset:
+            return create_stage_transforms(
+                self.hparams.dataset["batch_transforms"].get(stage, {}),
+                self.common_pre_batch_transforms,
+                self.common_post_batch_transforms
+            )
+        
+        return None
+    
+    def get_dataloader_kwargs(self, stage: str):
         data_loaders_cfg = self.hparams.get("data_loaders", {})
         
-        if "transforms" in self.hparams.dataset:
-            # TODO: add support for predict dataloader kwargs
-            for stage in STAGES:
-                task_stage_cfg = self.hparams.dataset["transforms"].get(stage, {})
-
-                setattr(self, f"{stage}_dataloader_kwargs", build_data_loader_kwargs(
-                    data_loaders_cfg,
-                    stage)
-                )
-
-                setattr(self, f"{stage}_transforms", create_state_transforms(
-                    task_stage_cfg,
-                    common_pre_transforms, 
-                    common_post_transforms
-                ))
-
-                setattr(self, f"{stage}_target_transforms", build_transform(
-                    task_stage_cfg.get("target_transforms", [])
-                ))
-
-        common_pre_batch_transforms, common_post_batch_transforms = [build_transform(self.hparams.dataset.get("batch_transforms", {}).get(m, [])) for m in MOMENTS]
-
-        if "batch_transforms" in self.hparams.dataset:
-            for m in MOMENTS:
-                setattr(self, f"{stage}_transfer_batch_transform", create_state_transforms(
-                    self.hparams.dataset["batch_transforms"].get(m, {}),
-                    common_pre_batch_transforms, 
-                    common_post_batch_transforms
-                ))
-        else:
-            self.pre_transfer_batch_transform = None
-            self.post_transfer_batch_transform = None
+        return build_data_loader_kwargs(
+            data_loaders_cfg,
+            stage)
 
     def get_dataset(self, phase: str):
         raise NotImplementedError
@@ -107,20 +108,16 @@ class ConfigurableLightningDataModule(L.LightningDataModule):
         return Transformed(dataset, getattr(self, f"{phase}_transforms"), getattr(self, f"{phase}_target_transforms"))
 
     def train_dataloader(self):
-        return DataLoader(self.get_dataset_for_dataloader('train'), **self.train_dataloader_kwargs)
+        return DataLoader(self.get_dataset_for_dataloader('train'), **self.get_dataloader_kwargs('train'))
     
     def val_dataloader(self):
-        return DataLoader(self.get_dataset_for_dataloader('val'), **self.val_dataloader_kwargs)
+        return DataLoader(self.get_dataset_for_dataloader('val'), **self.get_dataloader_kwargs('val'))
     
     def test_dataloader(self):
-        return DataLoader(self.get_dataset_for_dataloader('test'), **self.test_dataloader_kwargs)
+        return DataLoader(self.get_dataset_for_dataloader('test'), **self.get_dataloader_kwargs('test'))
     
     def predict_dataloader(self):
-        return DataLoader(self.get_dataset_for_dataloader('predict'), **self.predict_dataloader_kwargs)
-    
-    def reshape_batch_during_transfer(self, batch, dataloader_idx: int, moment: str):
-        # Probably remove this function or make it direclty parametrizable via (-1, 1, x) etc.
-        return batch
+        return DataLoader(self.get_dataset_for_dataloader('predict'), **self.get_dataloader_kwargs('predict'))
     
     def on_before_batch_transfer(self, batch, dataloader_idx: int):
         if self.pre_transfer_batch_transform is not None:
