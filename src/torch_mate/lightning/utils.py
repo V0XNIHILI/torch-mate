@@ -1,9 +1,14 @@
-from typing import List, Dict, Union
+from typing import List, Dict, Union, Optional
+from copy import deepcopy
 
 import torchvision.transforms as transforms
 import torchvision.transforms as transforms
+
+from lightning import Trainer
 
 from torch_mate.utils import get_class
+from torch_mate.lightning import build_trainer_kwargs
+
 
 BuiltTransform = Union[transforms.Compose, None]
 StateTransform = Union[BuiltTransform, callable]
@@ -39,11 +44,7 @@ def create_state_transforms(task_stage_cfg: Dict, common_pre_transforms: BuiltTr
     return transforms.Compose(stage_transforms)
 
 
-# Only allow batch size and shuffle to pass through for now
-ALLOWED_KWARGS = ['batch_size', 'shuffle']
-
-
-def build_data_loader_kwargs(task_stage_cfg: Dict, data_loaders_cfg: Dict, stage: str) -> Dict:
+def build_data_loader_kwargs(data_loaders_cfg: Dict, stage: str) -> Dict:
     # Need to copy, else data from a stage will leak into the default dict,
     # and this data will leak into other stages as the kwargs are built.
     kwargs = data_loaders_cfg.get("default", {}).copy()
@@ -52,11 +53,36 @@ def build_data_loader_kwargs(task_stage_cfg: Dict, data_loaders_cfg: Dict, stage
         for (key, value) in data_loaders_cfg[stage].items():
             kwargs[key] = value
 
-    for key in ALLOWED_KWARGS:
-        if key in kwargs:
-            raise ValueError(f"Cannot override {key} from hparams.data_loaders configuration")
-        
-        if key in task_stage_cfg:
-            kwargs[key] = task_stage_cfg[key]
-    
     return kwargs
+
+
+def get_stack(cfg: Dict, trainer_kwargs: Optional[Dict], omit_data_module_cfg: bool = False):
+    trainer_cfg = build_trainer_kwargs(cfg)
+
+    if trainer_kwargs is not None:
+        trainer_cfg.update(trainer_kwargs)
+
+    trainer = Trainer(
+       **trainer_cfg
+    )
+
+    data_class = get_class(torch_mate.lightning, cfg["data_module"]["name"])
+
+    if "cfg" in cfg["data_module"]:
+        data = data_class(cfg, **cfg["data_module"]["cfg"])
+    else:
+        data = data_class(cfg, )
+
+    cfg = deepcopy(cfg)
+
+    if omit_data_module_cfg:
+        cfg["data_module"].pop("cfg", None)
+
+    model_class = get_class(torch_mate.lightning, cfg["main_module"]["name"])
+
+    if "cfg" in cfg["main_module"]:
+        model = model_class(cfg, **cfg["main_module"]["cfg"])
+    else:
+        model = model_class(cfg)
+
+    return trainer, model, data

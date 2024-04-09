@@ -86,7 +86,7 @@ def evaluate(model: nn.Module,
                                                        extra_loss)
 
             eval_error += error.detach()
-            eval_accuracies.append(accuracy)
+            eval_accuracies.append(accuracy.cpu())
 
     eval_accuracies = np.array(eval_accuracies)
 
@@ -124,7 +124,7 @@ def main(
         test_data_loader (Optional[DataLoader], optional): Testing data loader. If specified, the model will be evaluated on the test set after training. Defaults to None.
         batch_transform (OptionalBatchTransform, optional): Transform to apply to whole batch of data during training/validation/testing. Defaults to None.
         extra_loss (OptionalExtLoss, optional): Extra loss function which gets added to the normal loss. This function receives the batch transformed data and the model outputs for that batch via `extra_loss(X, output)`. Defaults to None.
-        test_every (int, optional): How often to measure validation performance. Defaults to 2.
+        test_every (int, optional): How often to measure validation performance; -1 means only test in the last epoch. Defaults to 2.
         save_every (int, optional): How often to save the model. If set to 0, the model will never be saved, if set to -1, the model will only be saved in the last step. Defaults to 50.
         save_dir (Optional[str], optional): Where to save the model. Prepended inside of this function by `nets/`. Defaults to None.
         compile_model (bool, optional): Whether or not to compile the model (for PyTorch 2.0). Defaults to False.
@@ -150,7 +150,12 @@ def main(
     scheduler = get_class(optim.lr_scheduler, cfg.lr_scheduler.name)(
         opt, **cfg.lr_scheduler.cfg.toDict()) if cfg.lr_scheduler else None
 
-    loss = get_class(nn, cfg.criterion.name)()
+    loss = get_class(nn, cfg.criterion.name)
+
+    if cfg.criterion.cfg:
+        loss = loss(**cfg.criterion.cfg.toDict())
+    else:
+        loss = loss()
 
     stop_early = EarlyStopping(*cfg.early_stopping.cfg) if cfg.early_stopping else None
 
@@ -183,7 +188,7 @@ def main(
 
         break_this_step = False
 
-        if epoch % test_every == 0 or is_last_epoch:
+        if (test_every == -1 and is_last_epoch) or (test_every != -1 and epoch % test_every == 0 or is_last_epoch):
             evaluation_data = {step_key: epoch}
 
             if not custom_evaluate:

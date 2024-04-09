@@ -5,6 +5,7 @@ import lightning as L
 from torch.utils.data import DataLoader
 
 from torch_mate.lightning.utils import build_data_loader_kwargs, create_state_transforms, build_transform, BuiltTransform, StateTransform
+from torch_mate.data.utils import Transformed, PreLoaded
 
 STAGES = ['train', 'val', 'test', 'predict']
 MOMENTS = ["pre", "post"]
@@ -61,7 +62,6 @@ class ConfigurableLightningDataModule(L.LightningDataModule):
             task_stage_cfg = self.hparams.task.get(stage, {})
 
             setattr(self, f"{stage}_dataloader_kwargs", build_data_loader_kwargs(
-                task_stage_cfg,
                 data_loaders_cfg,
                 stage)
             )
@@ -87,32 +87,51 @@ class ConfigurableLightningDataModule(L.LightningDataModule):
 
     def get_dataset(self, phase: str):
         raise NotImplementedError
+    
+    def get_dataset_for_dataloader(self, phase: str):
+        dataset = self.get_dataset(phase)
+
+        # API for this entry in the configuration dict is up for change imo.
+        if "pre_load" in self.hparams.task.get("extra", {}):
+            if phase in self.hparams.task["extra"]["pre_load"]:
+                dataset = PreLoaded(dataset)
+
+        if getattr(self, f"{phase}_transforms") is None or getattr(self, f"{phase}_target_transforms") is None:
+            return dataset
+        
+        return Transformed(dataset, getattr(self, f"{phase}_transforms"), getattr(self, f"{phase}_target_transforms"))
 
     def train_dataloader(self):
-        return DataLoader(self.get_dataset('train'), **self.train_dataloader_kwargs)
+        return DataLoader(self.get_dataset_for_dataloader('train'), **self.train_dataloader_kwargs)
     
     def val_dataloader(self):
-        return DataLoader(self.get_dataset('val'), **self.val_dataloader_kwargs)
+        return DataLoader(self.get_dataset_for_dataloader('val'), **self.val_dataloader_kwargs)
     
     def test_dataloader(self):
-        return DataLoader(self.get_dataset('test'), **self.test_dataloader_kwargs)
+        return DataLoader(self.get_dataset_for_dataloader('test'), **self.test_dataloader_kwargs)
     
     def predict_dataloader(self):
-        return DataLoader(self.get_dataset('predict'), **self.predict_dataloader_kwargs)
+        return DataLoader(self.get_dataset_for_dataloader('predict'), **self.predict_dataloader_kwargs)
     
     def reshape_batch_during_transfer(self, batch, dataloader_idx: int, moment: str):
+        # Probably remove this function or make it direclty parametrizable via (-1, 1, x) etc.
         return batch
     
     def on_before_batch_transfer(self, batch, dataloader_idx: int):
-        if self.post_transfer_batch_transform is not None:
+        if self.pre_transfer_batch_transform is not None:
             batch = self.reshape_batch_during_transfer(batch, dataloader_idx, "before")
-            batch = self.post_transfer_batch_transform(batch)
+            a = self.pre_transfer_batch_transform(batch[0])
+            return a, batch[1]
         
         return batch
     
     def on_after_batch_transfer(self, batch, dataloader_idx: int):
-        if self.pre_transfer_batch_transform is not None:
+        if self.post_transfer_batch_transform is not None:
+            self.post_transfer_batch_transform.transforms[0].to(batch[0].device)
             batch = self.reshape_batch_during_transfer(batch, dataloader_idx, "after")
-            batch = self.pre_transfer_batch_transform(batch)
+            a = self.post_transfer_batch_transform(batch[0])
+            # Also add a transform here
+            # need to add transform that you dont care about logging them
+            return a, batch[1]
         
         return batch
