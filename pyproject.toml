@@ -29,5 +29,5 @@ requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
 
 [project.urls]
-"Homepage" = "https://github.com/V0XNIHILI/early-stopping"
-"Bug Tracker" = "https://github.com/V0XNIHILI/early-stopping/issues"
+"Homepage" = "https://github.com/V0XNIHILI/torch-mate"
+"Bug Tracker" = "https://github.com/V0XNIHILI/torch-mate/issues"
