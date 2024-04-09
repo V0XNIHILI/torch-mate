@@ -66,28 +66,22 @@ def get_stack(cfg: Dict, trainer_kwargs: Optional[Dict], omit_dataset_module_cfg
        **trainer_cfg
     )
 
-    if "name" in cfg["dataset"] and "module" in cfg["dataset"]:
-        raise ValueError("Cannot have both 'name' and 'module' in the dataset config when using get_stack(). Please only use 'module'.")
+    data_class = get_class(torch_mate.lightning, cfg["dataset"]["name"])
 
-    data_class = get_class(torch_mate.lightning, cfg["dataset"]["module"]["name"])
-
-    if "cfg" in cfg["dataset"]["module"]:
-        data = data_class(cfg, **cfg["dataset"]["module"]["cfg"])
+    if "kwargs" in cfg["dataset"]:
+        data = data_class(cfg, **cfg["dataset"]["kwargs"])
     else:
         data = data_class(cfg, )
 
     cfg = deepcopy(cfg)
 
     if omit_dataset_module_cfg:
-        cfg["dataset"]["module"].pop("cfg", None)
+        cfg["dataset"].pop("kwargs", None)
 
-    if "name" in cfg["learner"] and "module" in cfg["learner"]:
-        raise ValueError("Cannot have both 'name' and 'module' in the learner config when using get_stack(). Please only use 'module'.")
+    model_class = get_class(torch_mate.lightning, cfg["learner"]["name"])
 
-    model_class = get_class(torch_mate.lightning, cfg["learner"]["module"]["name"])
-
-    if "cfg" in cfg["learner"]["module"]:
-        model = model_class(cfg, **cfg["learner"]["module"]["cfg"])
+    if "kwargs" in cfg["learner"]:
+        model = model_class(cfg, **cfg["learner"]["kwargs"])
     else:
         model = model_class(cfg)
 
