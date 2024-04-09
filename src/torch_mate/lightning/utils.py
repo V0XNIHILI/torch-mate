@@ -1,9 +1,14 @@
-from typing import List, Dict, Union
+from typing import List, Dict, Union, Optional
+from copy import deepcopy
 
 import torchvision.transforms as transforms
 import torchvision.transforms as transforms
+
+from lightning import Trainer
 
 from torch_mate.utils import get_class
+from torch_mate.lightning import build_trainer_kwargs
+
 
 BuiltTransform = Union[transforms.Compose, None]
 StateTransform = Union[BuiltTransform, callable]
@@ -49,3 +54,35 @@ def build_data_loader_kwargs(data_loaders_cfg: Dict, stage: str) -> Dict:
             kwargs[key] = value
 
     return kwargs
+
+
+def get_stack(cfg: Dict, trainer_kwargs: Optional[Dict], omit_data_module_cfg: bool = False):
+    trainer_cfg = build_trainer_kwargs(cfg)
+
+    if trainer_kwargs is not None:
+        trainer_cfg.update(trainer_kwargs)
+
+    trainer = Trainer(
+       **trainer_cfg
+    )
+
+    data_class = get_class(torch_mate.lightning, cfg["data_module"]["name"])
+
+    if "cfg" in cfg["data_module"]:
+        data = data_class(cfg, **cfg["data_module"]["cfg"])
+    else:
+        data = data_class(cfg, )
+
+    cfg = deepcopy(cfg)
+
+    if omit_data_module_cfg:
+        cfg["data_module"].pop("cfg", None)
+
+    model_class = get_class(torch_mate.lightning, cfg["main_module"]["name"])
+
+    if "cfg" in cfg["main_module"]:
+        model = model_class(cfg, **cfg["main_module"]["cfg"])
+    else:
+        model = model_class(cfg)
+
+    return trainer, model, data
