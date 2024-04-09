@@ -39,11 +39,7 @@ def create_state_transforms(task_stage_cfg: Dict, common_pre_transforms: BuiltTr
     return transforms.Compose(stage_transforms)
 
 
-# Only allow batch size and shuffle to pass through for now
-ALLOWED_KWARGS = ['batch_size', 'shuffle']
-
-
-def build_data_loader_kwargs(task_stage_cfg: Dict, data_loaders_cfg: Dict, stage: str) -> Dict:
+def build_data_loader_kwargs(data_loaders_cfg: Dict, stage: str) -> Dict:
     # Need to copy, else data from a stage will leak into the default dict,
     # and this data will leak into other stages as the kwargs are built.
     kwargs = data_loaders_cfg.get("default", {}).copy()
@@ -52,11 +48,4 @@ def build_data_loader_kwargs(task_stage_cfg: Dict, data_loaders_cfg: Dict, stage
         for (key, value) in data_loaders_cfg[stage].items():
             kwargs[key] = value
 
-    for key in ALLOWED_KWARGS:
-        if key in kwargs:
-            raise ValueError(f"Cannot override {key} from hparams.data_loaders configuration")
-        
-        if key in task_stage_cfg:
-            kwargs[key] = task_stage_cfg[key]
-    
     return kwargs
