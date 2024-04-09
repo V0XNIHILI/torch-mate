@@ -36,13 +36,19 @@ class ConfigurableLightningModule(L.LightningModule):
 
         self.save_hyperparameters(cfg)
 
-        self.model = get_class(None, self.hparams.model["name"])(**self.hparams.model["cfg"])
+        self.model = self.configure_model()
+        self.criterion = self.configure_criteria()
+
+    def configure_model(self):
+        return get_class(None, self.hparams.model["name"])(**self.hparams.model["cfg"])
+
+    def configure_criteria(self):
         criterion_class = get_class(nn, self.hparams.criterion["name"])
 
         if "cfg" in self.hparams.criterion:
-            self.criterion = criterion_class(**self.hparams.criterion["cfg"])
-        else:
-            self.criterion = criterion_class()
+            return criterion_class(**self.hparams.criterion["cfg"])
+        
+        return criterion_class()
 
     def configure_optimizers(self) -> OptimizerLRScheduler:
         # TODO: support multiple schedulers
