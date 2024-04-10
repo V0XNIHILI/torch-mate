@@ -3,20 +3,20 @@ import torch.nn as nn
 
 
 class LeNet5BNMaxPool(nn.Module):
-    """Taken from: https://blog.paperspace.com/writing-lenet5-from-scratch-in-python/"""
+    """Modified from: https://blog.paperspace.com/writing-lenet5-from-scratch-in-python/"""
     def __init__(self, num_classes: int):
         super(LeNet5BNMaxPool, self).__init__()
 
         self.layer1 = nn.Sequential(
-            nn.Conv2d(1, 6, kernel_size=5, stride=1, padding=0),
+            nn.Conv2d(1, 6, kernel_size=5, padding=2),
             nn.BatchNorm2d(6),
             nn.ReLU(),
-            nn.MaxPool2d(kernel_size = 2, stride = 2))
+            nn.MaxPool2d(kernel_size = 2))
         self.layer2 = nn.Sequential(
             nn.Conv2d(6, 16, kernel_size=5, stride=1, padding=0),
             nn.BatchNorm2d(16),
             nn.ReLU(),
-            nn.MaxPool2d(kernel_size = 2, stride = 2))
+            nn.MaxPool2d(kernel_size = 2))
         self.fc = nn.Linear(400, 120)
         self.relu = nn.ReLU()
         self.fc1 = nn.Linear(120, 84)
