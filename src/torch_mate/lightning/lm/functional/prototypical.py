@@ -132,15 +132,18 @@ def process_metric_learning_batch(embedder: nn.Module, batch: MetaBatch,
 
 def generic_step(module: ConfigurableLightningModule, batch, batch_idx, phase: str):
     loss, (accuracy, confidence_interval) = process_metric_learning_batch(
-        module, batch, module.hparams.few_shot["cfg"]["metric"],
-        module.hparams.few_shot["cfg"]["average_support_embeddings"],
+        module, batch, module.hparams.learner["cfg"]["metric"],
+        module.hparams.learner["cfg"]["average_support_embeddings"],
         None, module.criterion)
     
-    module.log_dict({
+    log_dict = {
         f"meta_{phase}/loss": loss,
         f"meta_{phase}/accuracy": accuracy,
-        f"meta_{phase}/accuracy/95p_ci": confidence_interval
-    })
+    }
+
+    if module.hparams.learner["cfg"]["log_confidence_interval"]:
+        log_dict[f"meta_{phase}/accuracy@95%"] = confidence_interval
+    
+    module.log_dict(log_dict)
     
     return loss
-
