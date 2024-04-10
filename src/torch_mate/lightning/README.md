@@ -53,7 +53,7 @@ cfg.lr_scheduler = DotMap({
 })
 
 # Specify the model and its configuration
-cfg.model.name = 'torch_mate.models.LeNet5.LeNet5'
+cfg.model.name = 'torch_mate.models.LeNet5BNMaxPool'
 cfg.model.cfg = DotMap({
     'num_classes': 10
 })
