@@ -4,7 +4,7 @@ import lightning as L
 
 from torch.utils.data import DataLoader
 
-from torch_mate.lightning.utils import build_data_loader_kwargs, create_stage_transforms, build_transform, BuiltTransform, StageTransform
+from torch_mate.lightning.utils import build_data_loader_kwargs, create_stage_transforms, build_transform
 from torch_mate.data.utils import Transformed, PreLoaded
 
 STAGES = ['train', 'val', 'test', 'predict']
@@ -60,10 +60,11 @@ class ConfigurableLightningDataModule(L.LightningDataModule):
         return None
     
     def get_target_transform(self, stage: str):
-        # TODOO!!
         if "target_transforms" in self.hparams.dataset:
-            return build_transform(
-                self.hparams.dataset["target_transforms"].get(stage, {})
+            return create_stage_transforms(
+                self.hparams.dataset["target_transforms"].get(stage, {}),
+                self.common_pre_target_transforms, 
+                self.common_post_target_transforms
             )
         
         return None
