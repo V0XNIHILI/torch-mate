@@ -14,6 +14,14 @@ import torch_mate.lightning.lm.functional.supervised as LFSupervised
 class PrototypicalNetwork(ConfigurableLightningModule):
     def generic_step(self, batch, batch_idx, phase: str):
         return LFPrototypical.generic_step(self, batch, batch_idx, phase)
+    
+    def configure_model(self):
+        model = super().configure_model()
+
+        if self.hparams.learner.get("cfg", {}).get("embedder_key", None):
+            return dict(model.named_modules())[self.hparams.learner["cfg"]["embedder_key"]]
+        
+        return model
 
 # class MAML(ConfigurableLightningModule):
 #     def __init__(self, cfg: Dict):
