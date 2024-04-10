@@ -18,15 +18,15 @@ dependencies = [
   'torch',
   'torchvision',
   'matplotlib',
-  'tqdm',
-  'hasy',
-  'torchsummary',
-  'early-stopping @ git+https://github.com/V0XNIHILI/early-stopping@master'
+  'tqdm'
 ]
 
 [build-system]
 requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["torch_mate"]
 
 [project.urls]
 "Homepage" = "https://github.com/V0XNIHILI/torch-mate"
