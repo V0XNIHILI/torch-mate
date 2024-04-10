@@ -1,7 +1,6 @@
 from torch import Tensor
 import torch
 from torchaudio.datasets import SPEECHCOMMANDS
-from torch.utils.data import Dataset
 
 from typing import Union, Optional, Callable, Any, Tuple
 from pathlib import Path
