@@ -34,11 +34,14 @@ class ConfigurableLightningDataModule(L.LightningDataModule):
 
         super().__init__()
 
-        self.save_hyperparameters(cfg)
+        self.save_hyperparameters(self.configure_configuration(cfg))
 
         self.common_pre_transforms, self.common_post_transforms = [self.get_common_transform(m) for m in MOMENTS]
         self.common_pre_target_transforms, self.common_post_target_transforms = [self.get_common_target_transform(m) for m in MOMENTS]
         self.pre_transfer_batch_transform, self.post_transfer_batch_transform = [self.get_batch_transform(m) for m in MOMENTS]
+
+    def configure_configuration(self, cfg: Dict):
+        return cfg
 
     def get_common_transform(self, moment: str):
         return build_transform(self.hparams.dataset.get("transforms", {}).get(moment, []))

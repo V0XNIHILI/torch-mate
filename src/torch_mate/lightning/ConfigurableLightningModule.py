@@ -28,7 +28,7 @@ class ConfigurableLightningModule(L.LightningModule):
         - `self.predict_step(self, batch, batch_idx)`: calls `self.generic_step(batch, batch_idx, "predict")`
         - `self.configure_optimizers(self)`: creates the optimizer and scheduler based on the configuration dictionary
 
-        You can also override `self.configure_model(self)` and `self.configure_criteria(self)` to customize the model and criterion creation.
+        You can also override `self.configure_model(self)`, `self.configure_criteria(self)` and `self.configure_configuration(self, cfg: Dict)` to customize the model and criterion creation and the hyperparameter setting.
 
         Args:
             cfg (Dict): configuration dictionary
@@ -36,10 +36,13 @@ class ConfigurableLightningModule(L.LightningModule):
 
         super().__init__()
 
-        self.save_hyperparameters(cfg)
+        self.save_hyperparameters(self.configure_configuration(cfg))
 
         self._model = self.configure_model()
         self._criteria = self.configure_criteria()
+
+    def configure_configuration(self, cfg: Dict):
+        return cfg
 
     def configure_model(self):
         return get_class(None, self.hparams.model["name"])(**self.hparams.model["cfg"])
