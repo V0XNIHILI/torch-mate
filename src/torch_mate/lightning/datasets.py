@@ -41,10 +41,10 @@ class MNISTData(ConfigurableLightningDataModule):
                 mnist_full, [1 - val_percentage, val_percentage], generator=torch.Generator().manual_seed(self.hparams.seed)
             )
 
-            self.mnist_train = Transformed(mnist_train, self.train_transforms, self.train_target_transforms)
-            self.mnist_val = Transformed(mnist_val, self.val_transforms, self.val_target_transforms)
+            self.mnist_train = mnist_train
+            self.mnist_val = mnist_val
         elif stage == 'test':
-            self.mnist_test = MNIST(self.root, train=False, transform=self.test_transforms, target_transform=self.test_target_transforms, download=self.download)
+            self.mnist_test = MNIST(self.root, train=False, download=self.download)
         else:
             raise ValueError(f"Unsupported stage: {stage}")
 

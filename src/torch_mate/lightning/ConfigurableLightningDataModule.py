@@ -12,10 +12,6 @@ MOMENTS = ["pre", "post"]
 
 
 class ConfigurableLightningDataModule(L.LightningDataModule):
-    train_batch_transforms: BuiltTransform
-    val_batch_transforms: BuiltTransform
-    test_batch_transforms: BuiltTransform
-    predict_batch_transforms: BuiltTransform
 
     def __init__(self, cfg: Dict):
         """Lightweight wrapper around PyTorch Lightning LightningDataModule that adds support for configuration via a dictionary.
@@ -41,23 +37,22 @@ class ConfigurableLightningDataModule(L.LightningDataModule):
         self.save_hyperparameters(cfg)
 
         self.common_pre_transforms, self.common_post_transforms = [self.get_common_transform(m) for m in MOMENTS]
-        self.common_pre_batch_transforms, self.common_post_batch_transforms = [self.get_common_batch_transform(m) for m in MOMENTS]
-
-        for stage in STAGES:
-            setattr(self, f"{stage}_batch_transforms", self.get_batch_transform(stage))
+        self.common_pre_target_transforms, self.common_post_target_transforms = [self.get_common_target_transform(m) for m in MOMENTS]
+        self.pre_transfer_batch_transform, self.post_transfer_batch_transform = [self.get_batch_transform(m) for m in MOMENTS]
 
     def get_common_transform(self, moment: str):
         return build_transform(self.hparams.dataset.get("transforms", {}).get(moment, []))
+    
+    def get_common_target_transform(self, moment: str):
+        return build_transform(self.hparams.dataset.get("target_transforms", {}).get(moment, []))
     
     def get_common_batch_transform(self, moment: str):
         return build_transform(self.hparams.dataset.get("batch_transforms", {}).get(moment, []))
 
     def get_transform(self, stage: str):
         if "transforms" in self.hparams.dataset:
-            task_stage_cfg = self.hparams.dataset["transforms"].get(stage, {})
-
             return create_stage_transforms(
-                task_stage_cfg,
+                self.hparams.dataset["transforms"].get(stage, {}),
                 self.common_pre_transforms, 
                 self.common_post_transforms
             )
@@ -65,21 +60,18 @@ class ConfigurableLightningDataModule(L.LightningDataModule):
         return None
     
     def get_target_transform(self, stage: str):
+        # TODOO!!
         if "target_transforms" in self.hparams.dataset:
-            task_stage_cfg = self.hparams.dataset["transforms"].get(stage, {})
-    
             return build_transform(
-                task_stage_cfg.get("target_transforms", [])
+                self.hparams.dataset["target_transforms"].get(stage, {})
             )
         
         return None
     
-    def get_batch_transform(self, stage: str):
+    def get_batch_transform(self, moment: str):
         if "batch_transforms" in self.hparams.dataset:
-            return create_stage_transforms(
-                self.hparams.dataset["batch_transforms"].get(stage, {}),
-                self.common_pre_batch_transforms,
-                self.common_post_batch_transforms
+            return build_transform(
+                self.hparams.dataset["batch_transforms"].get(moment, [])
             )
         
         return None
@@ -89,7 +81,8 @@ class ConfigurableLightningDataModule(L.LightningDataModule):
         
         return build_data_loader_kwargs(
             data_loaders_cfg,
-            stage)
+            stage
+        )
 
     def get_dataset(self, phase: str):
         raise NotImplementedError
@@ -102,10 +95,13 @@ class ConfigurableLightningDataModule(L.LightningDataModule):
             if phase in self.hparams.dataset["extra"]["pre_load"]:
                 dataset = PreLoaded(dataset)
 
-        if getattr(self, f"{phase}_transforms") is None or getattr(self, f"{phase}_target_transforms") is None:
+        transform = self.get_transform(phase)
+        target_transform = self.get_target_transform(phase)
+
+        if transform is None and target_transform is None:
             return dataset
         
-        return Transformed(dataset, getattr(self, f"{phase}_transforms"), getattr(self, f"{phase}_target_transforms"))
+        return Transformed(dataset, self.get_transform(phase), self.get_target_transform(phase))
 
     def train_dataloader(self):
         return DataLoader(self.get_dataset_for_dataloader('train'), **self.get_dataloader_kwargs('train'))
@@ -121,19 +117,12 @@ class ConfigurableLightningDataModule(L.LightningDataModule):
     
     def on_before_batch_transfer(self, batch, dataloader_idx: int):
         if self.pre_transfer_batch_transform is not None:
-            batch = self.reshape_batch_during_transfer(batch, dataloader_idx, "before")
-            a = self.pre_transfer_batch_transform(batch[0])
-            return a, batch[1]
+            return self.pre_transfer_batch_transform(batch)
         
         return batch
     
     def on_after_batch_transfer(self, batch, dataloader_idx: int):
         if self.post_transfer_batch_transform is not None:
-            self.post_transfer_batch_transform.transforms[0].to(batch[0].device)
-            batch = self.reshape_batch_during_transfer(batch, dataloader_idx, "after")
-            a = self.post_transfer_batch_transform(batch[0])
-            # Also add a transform here
-            # need to add transform that you dont care about logging them
-            return a, batch[1]
+            return self.post_transfer_batch_transform(batch)
         
         return batch
