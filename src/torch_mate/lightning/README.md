@@ -145,8 +145,8 @@ trainer.fit(model, data)
 
 In case you want to add or override behavior of the defaults selected by TorchMate, this can be done by using hooks. TorchMate adds three new hooks, next to the ones provided by PyTorch Lightning:
 
-- `configure_model(self)`: return the model that should be trained. This model is used to set `self.model`
-- `configure_criteria(self)`: return the criteria that should be used
+- `configure_model(self)`: return the model that should be trained. This model can be access with `get_model(self)`.
+- `configure_criteria(self)`: return the criteria that should be used. The criteria can be accessed with `get_criteria(self)`.
 - `generic_step(self, batch, batch_idx, phase: str)`: function that is called by `training_step(...)`, `validation_step(...)`,  `test_step(...)` and `predict_step(...)` from the`ConfigurableLightningModule` with the the fitting stage argument (`train`/`val`/`test`/`predict`)
 
 ```python
@@ -165,11 +165,12 @@ class SupervisedLearner(ConfigurableLightningModule):
 
     def generic_step(self, batch, batch_idx, phase: str):
         X, y = batch
+        model = self.get_model()
+        criterion = self.get_criteria()
 
-        loss = self.criteria(self.model(X), y)
+        loss = criterion(model(X), y)
 
         self.log(f"{phase}/loss", loss)
 
         return loss
-        
 ```

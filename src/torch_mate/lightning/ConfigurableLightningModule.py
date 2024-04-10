@@ -15,8 +15,8 @@ class ConfigurableLightningModule(L.LightningModule):
         Based on this configuration, it creates the model, criterion, optimizer, and scheduler. Overall, compared to the
         PyTorch Lightning LightningModule, the following three attributes are added:
         
-        - `self.model`: the created model
-        - `self.criterion`: the created criterion
+        - `self.get_model()`: the created model
+        - `self.get_criteria`: the created criterion
         - `self.generic_step(self, batch, batch_idx, phase)`: a generic step function that is shared across all steps (train, val, test, predict)
 
         Based on these, the following methods are automatically implemented:
@@ -38,11 +38,14 @@ class ConfigurableLightningModule(L.LightningModule):
 
         self.save_hyperparameters(cfg)
 
-        self.model = self.configure_model()
-        self.criterion = self.configure_criteria()
+        self._model = self.configure_model()
+        self._criteria = self.configure_criteria()
 
     def configure_model(self):
         return get_class(None, self.hparams.model["name"])(**self.hparams.model["cfg"])
+    
+    def get_model(self):
+        return self._model
 
     def configure_criteria(self):
         criterion_class = get_class(nn, self.hparams.criterion["name"])
@@ -51,12 +54,15 @@ class ConfigurableLightningModule(L.LightningModule):
             return criterion_class(**self.hparams.criterion["cfg"])
         
         return criterion_class()
+    
+    def get_criteria(self):
+        return self._criteria
 
     def configure_optimizers(self) -> OptimizerLRScheduler:
         # TODO: support multiple schedulers
         opt_configs = self.hparams.optimizer if type(self.hparams.optimizer) is list else [self.hparams.optimizer]
 
-        optimizers = [get_class(optim, opt_cfg["name"])(self.model.parameters(),  **opt_cfg["cfg"]) for opt_cfg in opt_configs]
+        optimizers = [get_class(optim, opt_cfg["name"])(self.get_model().parameters(),  **opt_cfg["cfg"]) for opt_cfg in opt_configs]
 
         scheduler = get_class(optim.lr_scheduler, self.hparams.lr_scheduler["name"])(optimizers[0], **self.hparams.lr_scheduler["cfg"]) if "lr_scheduler" in self.hparams else None
 
@@ -66,7 +72,7 @@ class ConfigurableLightningModule(L.LightningModule):
         return optimizers
     
     def forward(self, x):
-        return self.model(x)
+        return self.get_model()(x)
     
     def generic_step(self, batch, batch_idx, phase: str):
         raise NotImplementedError
