@@ -62,7 +62,8 @@ cfg.model.cfg = DotMap({
 cfg.optimizer.name = 'Adam'
 cfg.optimizer.cfg = DotMap({"lr": 0.007})
 
-# Specify the training configuration (passed directly to the PyTorch Lightning Trainer). The `early_stopping` configuration is optional
+# Specify the training configuration (passed directly to the PyTorch
+# Lightning Trainer). The `early_stopping` configuration is optional
 # and will be used to configure the early stopping callback.
 cfg.training = DotMap({
     'max_epochs': 100,
@@ -85,15 +86,23 @@ cfg.dataset.kwargs = DotMap({
 })
 
 # Specify the transforms and their configuration
-# Note that you can specify .pre (common pre-transform), .train/.val/.test/.predict (specific transforms for each split) and .post (common post-transform). The complete
-# transforms will then be built automatically
-# The same goes for cfg.dataset.target_transforms
+# Note that you can specify .pre (common pre-transform), .train
+# .val/.test/.predict (specific transforms for each split) and
+# .post (common post-transform). The complete transforms will
+# then be built automatically. The same goes for target_transforms
+# via: cfg.dataset.target_transforms
 cfg.dataset.transforms.pre = [
     DotMap({'name': 'ToTensor'}),
     DotMap({'name': 'Resize', 'cfg': {'size': (28, 28)}}),
 ]
 
-# Specify the data loaders and their configuration (where default is the fallback configuration for all data loaders)
+# Optionally, specify a pre-device and post-device transfer
+# batch transform via: cfg.dataset.batch_transforms.pre and
+# cfg.dataset.batch_transforms.post in the same manner
+# as for the other transforms.
+
+# Specify the data loaders and their configuration (where default
+# is the fallback configuration for all data loaders)
 cfg.data_loaders = DotMap({
     'default': DotMap({
         'num_workers': 4,
