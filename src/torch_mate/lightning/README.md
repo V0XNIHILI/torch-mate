@@ -140,3 +140,36 @@ trainer, model, data = configure_stack(cfg,
 ```python
 trainer.fit(model, data)
 ```
+
+## Customization
+
+In case you want to add or override behavior of the defaults selected by TorchMate, this can be done by using hooks. TorchMate adds three new hooks, next to the ones provided by PyTorch Lightning:
+
+- `configure_model(self)`: return the model that should be trained. This model is used to set `self.model`
+- `configure_criteria(self)`: return the criteria that should be used
+- `generic_step(self, batch, batch_idx, phase: str)`: function that is called by `training_step(...)`, `validation_step(...)`,  `test_step(...)` and `predict_step(...)` from the`ConfigurableLightningModule` with the the fitting stage argument (`train`/`val`/`test`/`predict`)
+
+```python
+import torch.nn as nn
+
+from torch_mate.lightning import ConfigurableLightningModule
+
+class SupervisedLearner(ConfigurableLightningModule):
+    def configure_model(self):
+        # Can put any logic here and can access the configuration
+        # via self.hparams
+        return nn.Linear(100, 10)
+
+    def configure_criteria(self):
+        return nn.MSELoss()
+
+    def generic_step(self, batch, batch_idx, phase: str):
+        X, y = batch
+
+        loss = self.criteria(self.model(X), y)
+
+        self.log(f"{phase}/loss", loss)
+
+        return loss
+        
+```
