@@ -1,3 +1,3 @@
 from .ConfigurableLightningModule import ConfigurableLightningModule
 from .ConfigurableLightningDataModule import ConfigurableLightningDataModule
-from .utils import configure_stack
+from .configuration import configure_trainer, configure_data, configure_model, configure_model_data, configure_stack

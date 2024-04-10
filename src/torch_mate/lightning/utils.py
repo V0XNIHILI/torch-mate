@@ -1,14 +1,10 @@
-from typing import List, Dict, Union, Optional
+from typing import List, Dict, Union
 import copy
-from copy import deepcopy
 
 import torchvision.transforms as transforms
-import torchvision.transforms as transforms
 
-from lightning import Trainer
 from lightning.pytorch.callbacks.early_stopping import EarlyStopping
 
-import torch_mate
 from torch_mate.utils import get_class
 
 
@@ -79,35 +75,3 @@ def build_trainer_kwargs(cfg: Dict) -> Dict:
         return cfg_dict
 
     return {}
-
-
-def configure_stack(cfg: Dict, trainer_kwargs: Optional[Dict], omit_dataset_module_cfg: bool = True):
-    trainer_cfg = build_trainer_kwargs(cfg)
-
-    if trainer_kwargs is not None:
-        trainer_cfg.update(trainer_kwargs)
-
-    trainer = Trainer(
-       **trainer_cfg
-    )
-
-    data_class = get_class(torch_mate.lightning.datasets, cfg["dataset"]["name"])
-
-    if "kwargs" in cfg["dataset"]:
-        dataset_kwargs = deepcopy(cfg["dataset"]["kwargs"])
-
-        if omit_dataset_module_cfg:
-            cfg["dataset"].pop("kwargs", None)
-
-        data = data_class(cfg, **dataset_kwargs)
-    else:
-        data = data_class(cfg, )
-
-    model_class = get_class(torch_mate.lightning.lm, cfg["learner"]["name"])
-
-    if "kwargs" in cfg["learner"]:
-        model = model_class(cfg, **cfg["learner"]["kwargs"])
-    else:
-        model = model_class(cfg)
-
-    return trainer, model, data
