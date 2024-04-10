@@ -10,6 +10,7 @@ venv
 
 wandb
 lightning_logs
+test_wandb_lightning
 
 data
 !src/torch_mate/data
