@@ -7,4 +7,6 @@ from .disable_torch_debug_apis import disable_torch_debug_apis
 from .set_seeds import set_seeds
 from .get_pin_memory import get_pin_memory
 from .get_class import get_class
+from .get_class_and_init import get_class_and_init
+from .get_modules import get_modules
 from .configure_cuda import configure_cuda

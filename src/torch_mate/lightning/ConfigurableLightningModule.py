@@ -6,7 +6,7 @@ import torch.optim as optim
 import lightning as L
 from pytorch_lightning.utilities.types import OptimizerLRScheduler
 
-from torch_mate.utils import get_class
+from torch_mate.utils import get_class, get_modules
 
 
 class ConfigurableLightningModule(L.LightningModule):
@@ -45,18 +45,13 @@ class ConfigurableLightningModule(L.LightningModule):
         return cfg
 
     def configure_model(self):
-        return get_class(None, self.hparams.model["name"])(**self.hparams.model["cfg"])
+        return get_modules(None, self.hparams.model)
     
     def get_model(self):
         return self._model
 
     def configure_criteria(self):
-        criterion_class = get_class(nn, self.hparams.criterion["name"])
-
-        if "cfg" in self.hparams.criterion:
-            return criterion_class(**self.hparams.criterion["cfg"])
-        
-        return criterion_class()
+        return get_modules(nn, self.hparams.criterion)
     
     def get_criteria(self):
         return self._criteria
@@ -65,7 +60,7 @@ class ConfigurableLightningModule(L.LightningModule):
         # TODO: support multiple schedulers
         opt_configs = self.hparams.optimizer if type(self.hparams.optimizer) is list else [self.hparams.optimizer]
 
-        optimizers = [get_class(optim, opt_cfg["name"])(self.get_model().parameters(),  **opt_cfg["cfg"]) for opt_cfg in opt_configs]
+        optimizers = [get_class(optim, opt_cfg["name"])(self.get_model().parameters(), **opt_cfg["cfg"]) for opt_cfg in opt_configs]
 
         scheduler = get_class(optim.lr_scheduler, self.hparams.lr_scheduler["name"])(optimizers[0], **self.hparams.lr_scheduler["cfg"]) if "lr_scheduler" in self.hparams else None
 
