@@ -17,7 +17,6 @@ class ConfigurableLightningDataModule(L.LightningDataModule):
         """Lightweight wrapper around PyTorch Lightning LightningDataModule that adds support for configuration via a dictionary.
 
         Overall, compared to the PyTorch Lightning LightningModule, the following two attributes are added:
-        - `self.reshape_batch_during_transfer(self, batch, dataloader_idx, moment)`: a function that reshapes the batch during transfer to allow for standardized batch transforms
         - `self.get_dataset(self, phase)`: a function that returns the dataset for a given phase
 
         Based on these, the following methods are automatically implemented:
