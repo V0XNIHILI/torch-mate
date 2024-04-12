@@ -8,7 +8,7 @@ import torch.optim as optim
 import lightning as L
 from pytorch_lightning.utilities.types import OptimizerLRScheduler
 
-from torch_mate.utils import get_class, get_class_and_init, get_modules
+from torch_mate.utils import get_class_and_init, get_modules
 
 
 class ConfigurableLightningModule(L.LightningModule):

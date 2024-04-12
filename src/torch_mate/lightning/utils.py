@@ -5,7 +5,7 @@ import torchvision.transforms as transforms
 
 from lightning.pytorch.callbacks.early_stopping import EarlyStopping
 
-from torch_mate.utils import get_class
+from torch_mate.utils import get_class_and_init
 
 
 BuiltTransform = Union[transforms.Compose, None]
@@ -17,7 +17,7 @@ def build_transform(augmentations: List[Dict]):
         return None
 
     return transforms.Compose(
-        [get_class(transforms, aug["name"])(**(aug.get("cfg", {}))) for aug in augmentations]  
+        [get_class_and_init(transforms, aug) for aug in augmentations]  
     )
 
 
