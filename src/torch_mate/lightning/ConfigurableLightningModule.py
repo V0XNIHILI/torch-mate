@@ -1,4 +1,6 @@
-from typing import Dict
+from typing import Dict, List, Optional
+
+from itertools import repeat
 
 import torch.nn as nn
 import torch.optim as optim
@@ -6,7 +8,7 @@ import torch.optim as optim
 import lightning as L
 from pytorch_lightning.utilities.types import OptimizerLRScheduler
 
-from torch_mate.utils import get_class, get_modules
+from torch_mate.utils import get_class, get_class_and_init, get_modules
 
 
 class ConfigurableLightningModule(L.LightningModule):
@@ -55,19 +57,35 @@ class ConfigurableLightningModule(L.LightningModule):
     
     def get_criteria(self):
         return self._criteria
+    
+    def configure_optimizers_only(self) -> List[optim.Optimizer]:
+        opt_configs = self.hparams.optimizer if type(self.hparams.optimizer) is list else [self.hparams.optimizer]
+        return [get_class_and_init(optim, opt_cfg, self.get_model().parameters()) for opt_cfg in opt_configs]
+    
+    def configure_schedulers(self, optimizers: List[optim.Optimizer]) -> Optional[List[optim.lr_scheduler._LRScheduler]]:
+        schedulers = None
+
+        if "lr_scheduler" in self.hparams:
+            sched_configs = self.hparams.lr_scheduler if type(self.hparams.lr_scheduler) is list else [self.hparams.lr_scheduler]
+            optimizers_for_schedulers = optimizers if len(sched_configs) > 1 else repeat(optimizers[0], len(sched_configs))
+            schedulers = [get_class_and_init(optim.lr_scheduler, sched_cfg["scheduler"], optimizer) for sched_cfg, optimizer in zip(sched_configs, optimizers_for_schedulers)]
+            schedulers = [{"scheduler": scheduler} for scheduler in schedulers]
+
+            for i, sched_cfg in enumerate(sched_configs):
+                for key in sched_cfg:
+                    if key != "scheduler":
+                        schedulers[i][key] = sched_cfg[key]
+
+        return schedulers
 
     def configure_optimizers(self) -> OptimizerLRScheduler:
-        # TODO: support multiple schedulers
-        opt_configs = self.hparams.optimizer if type(self.hparams.optimizer) is list else [self.hparams.optimizer]
-
-        optimizers = [get_class(optim, opt_cfg["name"])(self.get_model().parameters(), **opt_cfg["cfg"]) for opt_cfg in opt_configs]
-
-        scheduler = get_class(optim.lr_scheduler, self.hparams.lr_scheduler["name"])(optimizers[0], **self.hparams.lr_scheduler["cfg"]) if "lr_scheduler" in self.hparams else None
-
-        if scheduler is not None:
-            return optimizers, [scheduler]
+        optimizers = self.configure_optimizers_only()
+        schedulers = self.configure_schedulers(optimizers)
+      
+        if schedulers is None:
+            return optimizers
         
-        return optimizers
+        return optimizers, schedulers
     
     def forward(self, x):
         return self.get_model()(x)
