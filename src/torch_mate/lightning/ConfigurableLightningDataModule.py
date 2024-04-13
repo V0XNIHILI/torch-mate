@@ -35,9 +35,9 @@ class ConfigurableLightningDataModule(L.LightningDataModule):
 
         self.save_hyperparameters(self.configure_configuration(cfg))
 
-        self.common_pre_transforms, self.common_post_transforms = [self.get_common_transform(m) for m in MOMENTS]
-        self.common_pre_target_transforms, self.common_post_target_transforms = [self.get_common_target_transform(m) for m in MOMENTS]
-        self.pre_transfer_batch_transform, self.post_transfer_batch_transform = [self.get_batch_transform(m) for m in MOMENTS]
+        self._common_pre_transforms, self._common_post_transforms = [self.get_common_transform(m) for m in MOMENTS]
+        self._common_pre_target_transforms, self._common_post_target_transforms = [self.get_common_target_transform(m) for m in MOMENTS]
+        self._pre_transfer_batch_transform, self._post_transfer_batch_transform = [self.get_batch_transform(m) for m in MOMENTS]
 
     def configure_configuration(self, cfg: Dict):
         return cfg
@@ -55,8 +55,8 @@ class ConfigurableLightningDataModule(L.LightningDataModule):
         if "transforms" in self.hparams.dataset:
             return create_stage_transforms(
                 self.hparams.dataset["transforms"].get(stage, {}),
-                self.common_pre_transforms if stage in STAGES else None,
-                self.common_post_transforms if stage in STAGES else None
+                self._common_pre_transforms if stage in STAGES else None,
+                self._common_post_transforms if stage in STAGES else None
             )
         
         return None
@@ -65,8 +65,8 @@ class ConfigurableLightningDataModule(L.LightningDataModule):
         if "target_transforms" in self.hparams.dataset:
             return create_stage_transforms(
                 self.hparams.dataset["target_transforms"].get(stage, {}),
-                self.common_pre_target_transforms if stage in STAGES else None,
-                self.common_post_target_transforms if stage in STAGES else None
+                self._common_pre_target_transforms if stage in STAGES else None,
+                self._common_post_target_transforms if stage in STAGES else None
             )
         
         return None
@@ -119,13 +119,13 @@ class ConfigurableLightningDataModule(L.LightningDataModule):
         return DataLoader(self.get_dataset_for_dataloader('predict'), **self.get_dataloader_kwargs('predict'))
     
     def on_before_batch_transfer(self, batch, dataloader_idx: int):
-        if self.pre_transfer_batch_transform is not None:
-            return self.pre_transfer_batch_transform(batch)
+        if self._pre_transfer_batch_transform is not None:
+            return self._pre_transfer_batch_transform(batch)
         
         return batch
     
     def on_after_batch_transfer(self, batch, dataloader_idx: int):
-        if self.post_transfer_batch_transform is not None:
-            return self.post_transfer_batch_transform(batch)
+        if self._post_transfer_batch_transform is not None:
+            return self._post_transfer_batch_transform(batch)
         
         return batch
