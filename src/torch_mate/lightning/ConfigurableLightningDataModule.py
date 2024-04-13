@@ -55,8 +55,8 @@ class ConfigurableLightningDataModule(L.LightningDataModule):
         if "transforms" in self.hparams.dataset:
             return create_stage_transforms(
                 self.hparams.dataset["transforms"].get(stage, {}),
-                self.common_pre_transforms, 
-                self.common_post_transforms
+                self.common_pre_transforms if stage in STAGES else None,
+                self.common_post_transforms if stage in STAGES else None
             )
         
         return None
@@ -65,8 +65,8 @@ class ConfigurableLightningDataModule(L.LightningDataModule):
         if "target_transforms" in self.hparams.dataset:
             return create_stage_transforms(
                 self.hparams.dataset["target_transforms"].get(stage, {}),
-                self.common_pre_target_transforms, 
-                self.common_post_target_transforms
+                self.common_pre_target_transforms if stage in STAGES else None,
+                self.common_post_target_transforms if stage in STAGES else None
             )
         
         return None
