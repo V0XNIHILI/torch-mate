@@ -49,8 +49,15 @@ class ConfigurableLightningModule(L.LightningModule):
     def configure_model(self):
         return get_modules(None, self.hparams.model)
     
-    def get_model(self):
-        return self._model
+    def get_model(self, *args):
+        if len(args) == 0:
+            return self._model
+        
+        if len(args) == 1 and type(args[0]) is list:
+            return [getattr(self._model, name) if type(name) is str else self._model[name] for name in args[0]]
+        
+        models = [getattr(self._model, name) if type(name) is str else self._model[name] for name in args]
+        return models[0] if len(models) == 1 else models
 
     def configure_criteria(self):
         return get_modules(nn, self.hparams.criterion)
