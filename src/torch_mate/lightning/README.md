@@ -44,7 +44,7 @@ cfg.criterion.name = 'CrossEntropyLoss'
 # })
 
 # Optionally specify the learning rate scheduler and its configuration
-cfg.lr_scheduler = DotMap({
+cfg.lr_scheduler.scheduler = DotMap({
     "name": "StepLR",
     "cfg": DotMap({
         "step_size": 2,
@@ -143,18 +143,20 @@ trainer.fit(model, data)
 
 ## Customization
 
+### For models
+
 In case you want to add or override behavior of the defaults selected by TorchMate, this can be done by using hooks. TorchMate adds three new hooks, next to the ones provided by PyTorch Lightning:
 
 - `configure_model(self)`: return the model that should be trained. This model can be access with `get_model(self)`.
 - `configure_criteria(self)`: return the criteria that should be used. The criteria can be accessed with `get_criteria(self)`.
-- `generic_step(self, batch, batch_idx, phase: str)`: function that is called by `training_step(...)`, `validation_step(...)`,  `test_step(...)` and `predict_step(...)` from the`ConfigurableLightningModule` with the the fitting stage argument (`train`/`val`/`test`/`predict`)
+- `generic_step(self, batch, batch_idx, phase: str)`: function that is called by `training_step(...)`, `validation_step(...)`,  `test_step(...)` and `predict_step(...)` from the`ConfigurableLightningModule` with the fitting stage argument (`train`/`val`/`test`/`predict`)
 
 ```python
 import torch.nn as nn
 
 from torch_mate.lightning import ConfigurableLightningModule
 
-class SupervisedLearner(ConfigurableLightningModule):
+class MyModel(ConfigurableLightningModule):
     def configure_model(self):
         # Can put any logic here and can access the configuration
         # via self.hparams
@@ -173,4 +175,20 @@ class SupervisedLearner(ConfigurableLightningModule):
         self.log(f"{phase}/loss", loss)
 
         return loss
+```
+
+### For data
+
+Similar to models, you can customize the data loading behavior by using hooks. TorchMate adds two new hooks:
+
+```python
+import torch.nn as nn
+
+from torch_mate.lightning import ConfigurableLightningDataModule
+
+class MyDataModule(ConfigurableLightningDataModule):
+    def get_dataset(self, split: str):
+        # Can put any logic here and can access the configuration
+        # via self.hparams
+        return MyDataset(split)
 ```
