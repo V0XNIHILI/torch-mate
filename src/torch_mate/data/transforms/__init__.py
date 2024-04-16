@@ -7,3 +7,14 @@ from torch_mate.data.transforms.DiscreteRandomRotation import \
     DiscreteRandomRotation
 from torch_mate.data.transforms.TimeShift import TimeShift
 from torch_mate.data.transforms.RandomResample import RandomResample
+from torch_mate.data.transforms.RandomVolume import RandomVolume
+
+__all__ = [
+    "AddNoise",
+    "Cartesian2PolarCoordinates",
+    "DiscreteRandomCoordinateRotation",
+    "DiscreteRandomRotation",
+    "TimeShift",
+    "RandomResample",
+    "RandomVolume",
+]
