@@ -28,7 +28,6 @@ def generic_step(module: ConfigurableLightningModule, batch, batch_idx, phase: s
 
     module.log(f"{phase}/loss", loss, prog_bar=prog_bar)
 
-    # TODO: add top-k support
     if module.hparams.learner.get("cfg", {}).get("classification", False) == True:
         if "topk" in module.hparams.learner["cfg"]:
             for i, k in enumerate(module.hparams.learner["cfg"]["topk"]):
