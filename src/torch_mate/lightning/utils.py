@@ -1,4 +1,4 @@
-from typing import List, Dict, Union
+from typing import List, Dict, Union, Optional
 import copy
 
 import torchvision.transforms as transforms
@@ -12,23 +12,29 @@ BuiltTransform = Union[transforms.Compose, None]
 StageTransform = Union[BuiltTransform, callable]
 
 
-def build_transform(augmentations: List[Dict]):
+def build_transform(augmentations: Union[Dict, List[Dict]]):
+    if isinstance(augmentations, dict):
+        augmentations = [augmentations]
+
     if len(augmentations) == 0:
         return None
+    
+    built_augmentations = [get_class_and_init(transforms, aug) for aug in augmentations]
+    
+    if len(built_augmentations) == 1:
+        return built_augmentations[0]
 
-    return transforms.Compose(
-        [get_class_and_init(transforms, aug) for aug in augmentations]  
-    )
+    return transforms.Compose(built_augmentations)
 
 
-def create_stage_transforms(task_stage_cfg: Dict, common_pre_transforms: BuiltTransform, common_post_transforms: BuiltTransform) -> StageTransform:
+def create_stage_transforms(task_stage_cfg: Optional[Union[Dict, List[Dict]]], common_pre_transforms: BuiltTransform, common_post_transforms: BuiltTransform) -> StageTransform:
     stage_transforms = []
 
     if common_pre_transforms:
         stage_transforms.append(common_pre_transforms)
 
-    if task_stage_cfg.get("transforms", None):
-        stage_transforms.append(build_transform(task_stage_cfg["transforms"]))
+    if task_stage_cfg:
+        stage_transforms.append(build_transform(task_stage_cfg))
 
     if common_post_transforms:
         stage_transforms.append(common_post_transforms)
