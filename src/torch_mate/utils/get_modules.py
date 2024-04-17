@@ -4,6 +4,7 @@ import torch.nn as nn
 
 from torch_mate.utils import get_class_and_init
 
+
 def get_modules(base_module, config: Dict):
     if type(config) is tuple:
         raise ValueError("A tuple of modules is not supported. Please use a list or a dict of modules.")
