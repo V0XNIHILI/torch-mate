@@ -30,9 +30,13 @@ class MNISTData(ConfigurableLightningDataModule):
         self.root = root
         self.download = download
 
+    def prepare_data(self) -> None:
+        MNIST(self.root, train=False, download=self.download)
+        MNIST(self.root, train=True, download=self.download)
+
     def setup(self, stage: str):
         if stage == 'fit' or stage == 'validate':
-            mnist_full = MNIST(self.root, train=True, download=self.download)
+            mnist_full = MNIST(self.root, train=True)
             
             val_percentage = self.hparams.dataset.get("cfg", {}).get("val_percentage", 500/60000)
 
@@ -43,7 +47,7 @@ class MNISTData(ConfigurableLightningDataModule):
             self.mnist_train = mnist_train
             self.mnist_val = mnist_val
         elif stage == 'test':
-            self.mnist_test = MNIST(self.root, train=False, download=self.download)
+            self.mnist_test = MNIST(self.root, train=False)
         else:
             raise ValueError(f"Unsupported stage: {stage}")
 
