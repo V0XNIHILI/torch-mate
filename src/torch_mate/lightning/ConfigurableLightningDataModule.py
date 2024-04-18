@@ -1,4 +1,5 @@
 from typing import Dict
+import inspect
 
 import lightning as L
 
@@ -105,18 +106,32 @@ class ConfigurableLightningDataModule(L.LightningDataModule):
             return dataset
         
         return Transformed(dataset, self.get_transform(phase), self.get_target_transform(phase))
+    
+    def get_dataloader(self, phase: str):
+        dataset = self.get_dataset_for_dataloader(phase)
+        kwargs = self.get_dataloader_kwargs(phase)
+
+        # Check if dataset is list or tuple and if the first element is a class
+        if isinstance(dataset, (list, tuple)) and inspect.isclass(dataset[0]):
+            return [DataLoader(ds, **kwargs) for ds in dataset]
+        
+        # Lightning only supports dict of dataloaders during training
+        if phase == 'train' and isinstance(dataset, dict):
+            return {k: DataLoader(v, **kwargs) for k, v in dataset.items()}
+
+        return DataLoader(dataset, **kwargs)
 
     def train_dataloader(self):
-        return DataLoader(self.get_dataset_for_dataloader('train'), **self.get_dataloader_kwargs('train'))
+        return self.get_dataloader('train')
     
     def val_dataloader(self):
-        return DataLoader(self.get_dataset_for_dataloader('val'), **self.get_dataloader_kwargs('val'))
+        return self.get_dataloader('val')
     
     def test_dataloader(self):
-        return DataLoader(self.get_dataset_for_dataloader('test'), **self.get_dataloader_kwargs('test'))
+        return self.get_dataloader('test')
     
     def predict_dataloader(self):
-        return DataLoader(self.get_dataset_for_dataloader('predict'), **self.get_dataloader_kwargs('predict'))
+        return self.get_dataloader('predict')
     
     def on_before_batch_transfer(self, batch, dataloader_idx: int):
         if self._pre_transfer_batch_transform is not None:
