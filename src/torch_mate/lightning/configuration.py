@@ -5,6 +5,7 @@ from lightning import Trainer
 import pytorch_lightning as pl
 
 import torch_mate.lightning.datasets
+import torch_mate.lightning.lm
 from torch_mate.utils import get_class_and_init
 from torch_mate.lightning.utils import build_trainer_kwargs
 
@@ -63,6 +64,8 @@ def configure_model_data(cfg: Dict, model_kwargs: Optional[Dict], data_kwargs: O
 
     set_seed(cfg, True)
 
+    # Instantiate data module before model module as the the dataset
+    # module kwargs might be deleted from the config dictionary
     data = configure_data(cfg, del_dataset_module_kwargs, **data_kwargs)
     model = configure_model(cfg, **model_kwargs)
 
@@ -70,14 +73,7 @@ def configure_model_data(cfg: Dict, model_kwargs: Optional[Dict], data_kwargs: O
 
 
 def configure_stack(cfg: Dict, trainer_kwargs: Optional[Dict] = None, model_kwargs: Optional[Dict] = None, data_kwargs: Optional[Dict] = None, del_dataset_module_kwargs: bool = True):
-    cfg = deepcopy(cfg)
-
-    set_seed(cfg, True)
-
+    model, data = configure_model_data(cfg, model_kwargs, data_kwargs, del_dataset_module_kwargs)
     trainer = configure_trainer(cfg, **(trainer_kwargs if trainer_kwargs else {}))
-    # Instantiate data module before model module as the the dataset
-    # module kwargs might be deleted from the config dictionary
-    data = configure_data(cfg, del_dataset_module_kwargs, **(data_kwargs if data_kwargs else {}))
-    model = configure_model(cfg, **(model_kwargs if model_kwargs else {}))
 
     return trainer, model, data
