@@ -235,7 +235,23 @@ class MyModel(ConfigurableLightningModule):
 
 ### For data
 
-Similar to models, you can customize the data loading behavior by using hooks. TorchMate adds two new hooks:
+#### Hooks overview
+
+Similar to models, you can customize the data loading behavior by using hooks. TorchMate adds the following new hooks:
+
+- `configure_configuration(self, cfg: Dict)`
+- `get_common_transform(self, moment: str)`
+- `get_common_target_transform(self, moment: str)`
+- `get_common_batch_transform(self, moment: str)`
+- `get_transform(self, stage: str)`
+- `get_target_transform(self, stage: str)`
+- `get_batch_transform(self, moment: str)`
+- `get_dataloader_kwargs(self, stage: str)`
+- `get_dataset(self, phase: str)`
+- `get_dataset_for_dataloader(self, phase: str)`
+- `get_dataloader(self, phase: str)`
+
+#### Example hook usage
 
 ```python
 import torch.nn as nn
