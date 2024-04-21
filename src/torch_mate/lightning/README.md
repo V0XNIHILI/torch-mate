@@ -57,6 +57,10 @@ cfg.model.name = 'torch_mate.models.LeNet5BNMaxPool'
 cfg.model.cfg = DotMap({
     'num_classes': 10
 })
+# Optionally specify a compilation configuration
+cfg.model.extra.compile = DotMap({
+    'name': 'torch.compile'
+})
 
 # Specify the optimizer and its configuration
 cfg.optimizer.name = 'Adam'
