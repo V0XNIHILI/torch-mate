@@ -1,6 +1,6 @@
 [project]
 name = "torch-mate"
-version = "0.0.2"
+version = "0.0.3"
 authors = [
   { name = "Douwe den Blanken" }
 ]
@@ -24,9 +24,6 @@ dependencies = [
 [build-system]
 requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
-
-[tool.setuptools]
-packages = ["torch_mate"]
 
 [project.urls]
 "Homepage" = "https://github.com/V0XNIHILI/torch-mate"
