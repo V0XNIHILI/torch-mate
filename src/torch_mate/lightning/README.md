@@ -190,7 +190,7 @@ trainer.fit(model, data)
 
 In case you want to add or override behavior of the defaults selected by TorchMate, this can be done by using hooks. TorchMate adds a few new hooks, next to the ones provided by PyTorch Lightning:
 
-- `configure_configuration(self)`
+- `configure_configuration(self, cfg: Dict)`
     - Return the configuration that should be used. This configuration can be accessed at `self.hparams`.
 - `configure_model(self)`
     - Return the model that should be trained. This model can be access with `get_model(self)`.
