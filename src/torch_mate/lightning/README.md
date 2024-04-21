@@ -142,6 +142,21 @@ The complete configuration dictionary will then look like this:
   'train': {'batch_size': 512}}}
 ```
 
+Note that the configuration can also contain references to classes directly, without the relative import path. This is practical for example when you define a model class in the same file as the configuration. For example:
+
+```python
+class LeNet5BNMaxPool(nn.Module):
+    def __init__(self, num_classes: int):
+        super(LeNet5BNMaxPool, self).__init__()
+        ...
+
+    def forward(self, x):
+        ...
+
+
+cfg["model"]["name"] = LeNet5BNMaxPool
+```
+
 ### Get the model, data and trainer
 
 ```python
@@ -167,6 +182,8 @@ trainer.fit(model, data)
 
 ### For models
 
+#### Hooks overview
+
 In case you want to add or override behavior of the defaults selected by TorchMate, this can be done by using hooks. TorchMate adds a few new hooks, next to the ones provided by PyTorch Lightning:
 
 - `configure_configuration(self)`
@@ -183,6 +200,8 @@ In case you want to add or override behavior of the defaults selected by TorchMa
     - Return the schedulers that should be used.
 - `generic_step(self, batch, batch_idx, phase: str)` 
     - Function that is called by `training_step(...)`, `validation_step(...)`,  `test_step(...)` and `predict_step(...)` from the`ConfigurableLightningModule` with the fitting stage argument (`train`/`val`/`test`/`predict`)
+
+#### Example hook usage
 
 ```python
 import torch.nn as nn
