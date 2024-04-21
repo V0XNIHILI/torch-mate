@@ -116,8 +116,30 @@ cfg.data_loaders = DotMap({
 })
 
 cfg = cfg.toDict()
+```
 
-print(yaml.dump(cfg, default_flow_style=False))
+The complete configuration dictionary will then look like this:
+
+```python
+{'learner': {'name': 'SupervisedLearner', 'cfg': {'classification': True}},
+ 'criterion': {'name': 'CrossEntropyLoss'},
+ 'lr_scheduler': {'scheduler': {'name': 'StepLR',
+   'cfg': {'step_size': 2, 'verbose': True}}},
+ 'model': {'name': 'torch_mate.models.LeNet5BNMaxPool',
+  'cfg': {'num_classes': 10}},
+ 'optimizer': {'name': 'Adam', 'cfg': {'lr': 0.007}},
+ 'training': {'max_epochs': 100,
+  'early_stopping': {'monitor': 'val/loss', 'patience': 10, 'mode': 'min'}},
+ 'seed': 4223747124,
+ 'dataset': {'name': 'MNISTData',
+  'kwargs': {'root': './data'},
+  'transforms': {'pre': [{'name': 'ToTensor'},
+    {'name': 'Resize', 'cfg': {'size': (28, 28)}}]}},
+ 'data_loaders': {'default': {'num_workers': 4,
+   'prefetch_factor': 16,
+   'persistent_workers': True,
+   'batch_size': 256},
+  'train': {'batch_size': 512}}}
 ```
 
 ### Get the model, data and trainer
@@ -145,11 +167,22 @@ trainer.fit(model, data)
 
 ### For models
 
-In case you want to add or override behavior of the defaults selected by TorchMate, this can be done by using hooks. TorchMate adds three new hooks, next to the ones provided by PyTorch Lightning:
+In case you want to add or override behavior of the defaults selected by TorchMate, this can be done by using hooks. TorchMate adds a few new hooks, next to the ones provided by PyTorch Lightning:
 
-- `configure_model(self)`: return the model that should be trained. This model can be access with `get_model(self)`.
-- `configure_criteria(self)`: return the criteria that should be used. The criteria can be accessed with `get_criteria(self)`.
-- `generic_step(self, batch, batch_idx, phase: str)`: function that is called by `training_step(...)`, `validation_step(...)`,  `test_step(...)` and `predict_step(...)` from the`ConfigurableLightningModule` with the fitting stage argument (`train`/`val`/`test`/`predict`)
+- `configure_configuration(self)`
+    - Return the configuration that should be used. This configuration can be accessed at `self.hparams`.
+- `configure_model(self)`
+    - Return the model that should be trained. This model can be access with `get_model(self)`.
+- `compile_model(self, model: nn.Module)`
+    - Compile the model and return it. This is called after the model is built and can be used to add change the compile behavior.
+- `configure_criteria(self)`
+    - Return the criteria that should be used.
+- `configure_optimizers_only(self)`
+    - Return the optimizers that should be used.
+- `configure_schedulers(self, optimizers: List[optim.Optimizer])`
+    - Return the schedulers that should be used.
+- `generic_step(self, batch, batch_idx, phase: str)` 
+    - Function that is called by `training_step(...)`, `validation_step(...)`,  `test_step(...)` and `predict_step(...)` from the`ConfigurableLightningModule` with the fitting stage argument (`train`/`val`/`test`/`predict`)
 
 ```python
 import torch.nn as nn
