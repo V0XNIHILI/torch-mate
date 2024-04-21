@@ -40,7 +40,7 @@ class ConfigurableLightningModule(L.LightningModule):
 
         self.save_hyperparameters(self.configure_configuration(cfg))
 
-        self._model = self.configure_model()
+        self._model = self.compile_model(self.configure_model())
         self._criteria = self.configure_criteria()
 
     def configure_configuration(self, cfg: Dict):
@@ -48,6 +48,14 @@ class ConfigurableLightningModule(L.LightningModule):
 
     def configure_model(self):
         return get_modules(None, self.hparams.model)
+    
+    def compile_model(self, model: nn.Module) -> nn.Module:
+        compile_cfg = self.hparams.model.get("extra", {}).get("compile", None)
+
+        if compile_cfg:
+            return get_class_and_init(None, compile_cfg, model)
+
+        return model
     
     def get_model(self, *args):
         if len(args) == 0:
