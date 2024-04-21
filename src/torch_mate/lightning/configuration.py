@@ -59,15 +59,15 @@ def configure_model(cfg: Dict, **kwargs):
     return get_class_and_init(torch_mate.lightning.lm, name_and_config, cfg)
 
 
-def configure_model_data(cfg: Dict, model_kwargs: Optional[Dict], data_kwargs: Optional[Dict], del_dataset_module_kwargs: bool = True):
+def configure_model_data(cfg: Dict, model_kwargs: Optional[Dict] = None, data_kwargs: Optional[Dict] = None, del_dataset_module_kwargs: bool = True):
     cfg = deepcopy(cfg)
 
     set_seed(cfg, True)
 
     # Instantiate data module before model module as the the dataset
     # module kwargs might be deleted from the config dictionary
-    data = configure_data(cfg, del_dataset_module_kwargs, **data_kwargs)
-    model = configure_model(cfg, **model_kwargs)
+    data = configure_data(cfg, del_dataset_module_kwargs, **(data_kwargs if data_kwargs else {}))
+    model = configure_model(cfg, **(model_kwargs if model_kwargs else {}))
 
     return model, data
 
