@@ -9,13 +9,7 @@ My goal here is to achieve zero-code, pure from-configuration-only training of P
 ### Imports
 
 ```python
-import yaml
-
 from dotmap import DotMap
-
-from lightning.pytorch.loggers import WandbLogger
-
-from torch_mate.lightning import configure_stack
 ```
 
 ### Define the configuration
@@ -164,6 +158,10 @@ cfg["model"]["name"] = LeNet5BNMaxPool
 ### Get the model, data and trainer
 
 ```python
+from lightning.pytorch.loggers import WandbLogger
+
+from torch_mate.lightning import configure_stack
+
 trainer, model, data = configure_stack(cfg,
     # Specify all keyworded arguments that are not part of the 
     # `cfg.training` dictionary for the PyTorch Lightning Trainer
