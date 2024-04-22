@@ -49,6 +49,9 @@ def create_stage_transforms(task_stage_cfg: Optional[Union[Dict, List[Dict]]], c
 
 
 def build_dataloader_kwargs(dataloaders_cfg: Dict, stage: str) -> Dict:
+    if not any([key in dataloaders_cfg for key in ['train', 'val', 'test', 'predict', 'default']]):
+        return dataloaders_cfg
+
     # Need to copy, else data from a stage will leak into the default dict,
     # and this data will leak into other stages as the kwargs are built.
     kwargs = dataloaders_cfg.get("default", {}).copy()
