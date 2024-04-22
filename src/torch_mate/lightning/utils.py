@@ -48,13 +48,13 @@ def create_stage_transforms(task_stage_cfg: Optional[Union[Dict, List[Dict]]], c
     return transforms.Compose(stage_transforms)
 
 
-def build_data_loader_kwargs(data_loaders_cfg: Dict, stage: str) -> Dict:
+def build_dataloader_kwargs(dataloaders_cfg: Dict, stage: str) -> Dict:
     # Need to copy, else data from a stage will leak into the default dict,
     # and this data will leak into other stages as the kwargs are built.
-    kwargs = data_loaders_cfg.get("default", {}).copy()
+    kwargs = dataloaders_cfg.get("default", {}).copy()
 
-    if stage in data_loaders_cfg:
-        for (key, value) in data_loaders_cfg[stage].items():
+    if stage in dataloaders_cfg:
+        for (key, value) in dataloaders_cfg[stage].items():
             kwargs[key] = value
 
     return kwargs

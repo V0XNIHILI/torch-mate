@@ -5,7 +5,7 @@ import lightning as L
 
 from torch.utils.data import DataLoader
 
-from torch_mate.lightning.utils import build_data_loader_kwargs, create_stage_transforms, build_transform
+from torch_mate.lightning.utils import build_dataloader_kwargs, create_stage_transforms, build_transform
 from torch_mate.data.utils import Transformed, PreLoaded
 
 STAGES = ['train', 'val', 'test', 'predict']
@@ -81,10 +81,10 @@ class ConfigurableLightningDataModule(L.LightningDataModule):
         return None
     
     def get_dataloader_kwargs(self, stage: str):
-        data_loaders_cfg = self.hparams.get("data_loaders", {})
+        dataloaders_cfg = self.hparams.get("dataloaders", {})
         
-        return build_data_loader_kwargs(
-            data_loaders_cfg,
+        return build_dataloader_kwargs(
+            dataloaders_cfg,
             stage
         )
 

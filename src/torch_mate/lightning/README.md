@@ -20,7 +20,7 @@ cfg = {
     "training": {...},
     "seed": ..., # Optional
     "dataset": {...},
-    "data_loaders": {...},
+    "dataloaders": {...},
 }
 
 ```
@@ -114,7 +114,7 @@ cfg.dataset.transforms.pre = [
 
 # Specify the data loaders and their configuration (where default
 # is the fallback configuration for all data loaders)
-cfg.data_loaders = DotMap({
+cfg.dataloaders = DotMap({
     'default': DotMap({
         'num_workers': 4,
         'prefetch_factor': 16,
@@ -146,7 +146,7 @@ The complete configuration dictionary will then look like this:
   'kwargs': {'root': './data'},
   'transforms': {'pre': [{'name': 'ToTensor'},
     {'name': 'Resize', 'cfg': {'size': (28, 28)}}]}},
- 'data_loaders': {'default': {'num_workers': 4,
+ 'dataloaders': {'default': {'num_workers': 4,
    'prefetch_factor': 16,
    'persistent_workers': True,
    'batch_size': 256},
