@@ -9,7 +9,7 @@ import numpy as np
 from sklearn.linear_model import LogisticRegression
 from torch_mate.utils import calc_accuracy
 
-from torch_mate.flow.main import OptionalBatchTransform
+from torch_mate.typing import OptionalBatchTransform
 
 from torch_mate.lightning import ConfigurableLightningModule
 
