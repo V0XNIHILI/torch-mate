@@ -259,7 +259,7 @@ Similar to models, you can customize the data loading behavior by using hooks. T
 - `get_batch_transform(self, moment: str)`
 - `get_dataloader_kwargs(self, stage: str)`
 - `get_dataset(self, phase: str)`
-- `get_dataset_for_dataloader(self, phase: str)`
+- `get_transformed_dataset(self, phase: str)`
 - `get_dataloader(self, phase: str)`
 
 #### Example hook usage

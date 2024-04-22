@@ -91,7 +91,7 @@ class ConfigurableLightningDataModule(L.LightningDataModule):
     def get_dataset(self, phase: str):
         raise NotImplementedError
     
-    def get_dataset_for_dataloader(self, phase: str):
+    def get_transformed_dataset(self, phase: str):
         dataset = self.get_dataset(phase)
 
         # API for this entry in the configuration dict is up for change imo.
@@ -108,7 +108,7 @@ class ConfigurableLightningDataModule(L.LightningDataModule):
         return Transformed(dataset, self.get_transform(phase), self.get_target_transform(phase))
     
     def get_dataloader(self, phase: str):
-        dataset = self.get_dataset_for_dataloader(phase)
+        dataset = self.get_transformed_dataset(phase)
         kwargs = self.get_dataloader_kwargs(phase)
 
         # Check if dataset is list or tuple and if the first element is a class
