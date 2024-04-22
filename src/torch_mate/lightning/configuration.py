@@ -72,7 +72,7 @@ def configure_model_data(cfg: Dict, model_kwargs: Optional[Dict] = None, data_kw
     return model, data
 
 
-def configure_stack(cfg: Dict, trainer_kwargs: Optional[Dict] = None, model_kwargs: Optional[Dict] = None, data_kwargs: Optional[Dict] = None, del_dataset_module_kwargs: bool = True):
+def configure_all(cfg: Dict, trainer_kwargs: Optional[Dict] = None, model_kwargs: Optional[Dict] = None, data_kwargs: Optional[Dict] = None, del_dataset_module_kwargs: bool = True):
     model, data = configure_model_data(cfg, model_kwargs, data_kwargs, del_dataset_module_kwargs)
     trainer = configure_trainer(cfg, **(trainer_kwargs if trainer_kwargs else {}))
 

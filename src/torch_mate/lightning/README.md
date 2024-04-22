@@ -17,10 +17,10 @@ cfg = {
     "lr_scheduler": {...}, # Optional
     "model": {...},
     "optimizer": {...},
-    "training": {...},
+    "training": {...}, # Optional
     "seed": ..., # Optional
-    "dataset": {...},
-    "dataloaders": {...},
+    "dataset": {...}, # Optional
+    "dataloaders": {...}, # Optional
 }
 
 ```
@@ -173,9 +173,9 @@ cfg["model"]["name"] = LeNet5BNMaxPool
 ```python
 from lightning.pytorch.loggers import WandbLogger
 
-from torch_mate.lightning import configure_stack
+from torch_mate.lightning import configure_all
 
-trainer, model, data = configure_stack(cfg,
+trainer, model, data = configure_all(cfg,
     # Specify all keyworded arguments that are not part of the 
     # `cfg.training` dictionary for the PyTorch Lightning Trainer
     {
