@@ -130,7 +130,7 @@ def process_metric_learning_batch(embedder: nn.Module, batch: MetaBatch,
     return meta_error / meta_batch_size, (accuracy, confidence_interval)
 
 
-def generic_step(module: ConfigurableLightningModule, batch, batch_idx, phase: str):
+def shared_step(module: ConfigurableLightningModule, batch, batch_idx, phase: str):
     loss, (accuracy, confidence_interval) = process_metric_learning_batch(
         module, batch, module.hparams.learner["cfg"]["metric"],
         module.hparams.learner["cfg"]["average_support_embeddings"],

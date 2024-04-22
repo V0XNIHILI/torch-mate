@@ -13,5 +13,5 @@ class TripletNetwork(ConfigurableLightningModule):
     def forward(self, x):
         return LFTriplet.forward(self, x)
 
-    def generic_step(self, batch, batch_idx, phase: str):
-        return LFTriplet.generic_step(self, batch, batch_idx, phase)
+    def shared_step(self, batch, batch_idx, phase: str):
+        return LFTriplet.shared_step(self, batch, batch_idx, phase)

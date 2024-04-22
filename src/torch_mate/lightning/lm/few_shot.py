@@ -12,8 +12,8 @@ import torch_mate.lightning.lm.functional.supervised as LFSupervised
 # from torch_mate.lightning.utils.MAML import MAML as PTMAML
 
 class PrototypicalNetwork(ConfigurableLightningModule):
-    def generic_step(self, batch, batch_idx, phase: str):
-        return LFPrototypical.generic_step(self, batch, batch_idx, phase)
+    def shared_step(self, batch, batch_idx, phase: str):
+        return LFPrototypical.shared_step(self, batch, batch_idx, phase)
     
     def configure_model(self):
         model = super().configure_model()
@@ -35,8 +35,8 @@ class PrototypicalNetwork(ConfigurableLightningModule):
     
 #         self.maml = PTMAML(self.model, self.hparams.few_shot["cfg"]["inner_loop_lr"], self.hparams.few_shot["cfg"].get("first_order", False))
 
-#     def generic_step(self, batch, batch_idx, phase: str):
-#         return LFMAML.generic_step(self, batch, batch_idx, phase)
+#     def shared_step(self, batch, batch_idx, phase: str):
+#         return LFMAML.shared_step(self, batch, batch_idx, phase)
     
 #     def on_before_optimizer_step(self, optimizer: Optimizer):
 #         # Average the accumulated gradients and optimize

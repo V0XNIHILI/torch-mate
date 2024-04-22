@@ -21,7 +21,7 @@ def process_supervised_batch(model: nn.Module, batch, criterion: nn.Module):
     return output, loss
 
 
-def generic_step(module: ConfigurableLightningModule, batch, batch_idx, phase: str):
+def shared_step(module: ConfigurableLightningModule, batch, batch_idx, phase: str):
     output, loss = process_supervised_batch(module, batch, module.get_criteria())
 
     prog_bar = phase == 'val'

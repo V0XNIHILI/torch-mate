@@ -12,10 +12,10 @@ def forward(module: nn.Module, x):
     return anchor_output, positive_output, negative_output
 
 
-def generic_step(module: ConfigurableLightningModule, batch, batch_idx, phase: str):
+def shared_step(module: ConfigurableLightningModule, batch, batch_idx, phase: str):
     anchor_output, positive_output, negative_output = forward(module, batch)
 
-    loss = module.criterion(anchor_output, positive_output, negative_output)
+    loss = module.get_criteria()(anchor_output, positive_output, negative_output)
 
     p = module.hparams.self_supervised["cfg"]["norm_degree"]
 

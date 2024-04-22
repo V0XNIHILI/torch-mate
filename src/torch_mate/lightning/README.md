@@ -213,7 +213,7 @@ In case you want to add or override behavior of the defaults selected by TorchMa
     - Return the optimizers that should be used.
 - `configure_schedulers(self, optimizers: List[optim.Optimizer])`
     - Return the schedulers that should be used.
-- `generic_step(self, batch, batch_idx, phase: str)` 
+- `shared_step(self, batch, batch_idx, phase: str)` 
     - Function that is called by `training_step(...)`, `validation_step(...)`,  `test_step(...)` and `predict_step(...)` from the`ConfigurableLightningModule` with the fitting stage argument (`train`/`val`/`test`/`predict`)
 
 #### Example hook usage
@@ -232,7 +232,7 @@ class MyModel(ConfigurableLightningModule):
     def configure_criteria(self):
         return nn.MSELoss()
 
-    def generic_step(self, batch, batch_idx, phase: str):
+    def shared_step(self, batch, batch_idx, phase: str):
         X, y = batch
         model = self.get_model()
         criterion = self.get_criteria()
