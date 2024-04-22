@@ -14,10 +14,10 @@ from early_stopping import EarlyStopping
 from torch.utils.data import DataLoader
 from torch_mate.utils import calc_accuracy, iterate_to_device, get_class
 from torch_mate.contexts import evaluating, training
+from torch_mate.typing import OptionalBatchTransform
 
 from tqdm import tqdm
 
-OptionalBatchTransform = Optional[Callable[[torch.Tensor], torch.Tensor]]
 OptionalExtLoss = Optional[Callable[[torch.Tensor, torch.Tensor], torch.Tensor]]
 OptionalCustomEvalTest = Optional[Callable[[nn.Module, nn.Module, DataLoader, torch.device, OptionalBatchTransform], Dict]]
 
