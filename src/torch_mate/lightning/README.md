@@ -6,17 +6,30 @@ My goal here is to achieve zero-code, pure from-configuration-only training of P
 
 ## Example usage
 
-### Imports
+### Define the configuration
+
+To define a complete configuration, you can use the following top level keys:
+
+```python
+cfg = {
+    "learner": {...},
+    "criterion": {...},
+    "lr_scheduler": {...}, # Optional
+    "model": {...},
+    "optimizer": {...},
+    "training": {...},
+    "seed": ..., # Optional
+    "dataset": {...},
+    "data_loaders": {...},
+}
+
+```
+
+For example, to train a LeNet5 on MNIST with early stopping and learning rate stepping, the configuration can be defined like below (note that I use `DotMap` here to define the configuration, but you can use any other dictionary-like object):
 
 ```python
 from dotmap import DotMap
-```
 
-### Define the configuration
-
-Note that I use `DotMap` here to define the configuration, but you can use any other dictionary-like object.
-
-```python
 cfg = DotMap()
 
 # Specify the learner and its configuration
