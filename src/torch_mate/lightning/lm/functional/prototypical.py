@@ -134,7 +134,7 @@ def shared_step(module: ConfigurableLightningModule, batch, batch_idx, phase: st
     loss, (accuracy, confidence_interval) = process_metric_learning_batch(
         module, batch, module.hparams.learner["cfg"]["metric"],
         module.hparams.learner["cfg"]["average_support_embeddings"],
-        None, module.get_criteria())
+        None, module.criteria)
     
     log_dict = {
         f"meta_{phase}/loss": loss,

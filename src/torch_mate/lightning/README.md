@@ -235,7 +235,7 @@ class MyModel(ConfigurableLightningModule):
     def shared_step(self, batch, batch_idx, phase: str):
         X, y = batch
         model = self.get_model()
-        criterion = self.get_criteria()
+        criterion = self.criteria
 
         loss = criterion(model(X), y)
 

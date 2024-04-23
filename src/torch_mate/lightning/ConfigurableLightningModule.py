@@ -23,7 +23,7 @@ class ConfigurableLightningModule(L.LightningModule):
         PyTorch Lightning LightningModule, the following three attributes are added:
         
         - `self.get_model()`: the created model
-        - `self.get_criteria`: the created criterion
+        - `self.criteria`: the created criterion
         - `self.shared_step(self, batch, batch_idx, phase)`: a generic step function that is shared across all steps (train, val, test, predict)
 
         Based on these, the following methods are automatically implemented:
@@ -46,7 +46,7 @@ class ConfigurableLightningModule(L.LightningModule):
         self.save_hyperparameters(self.configure_configuration(cfg))
 
         self._model = self.compile_model(self.configure_model())
-        self._criteria = self.configure_criteria()
+        self.criteria = self.configure_criteria()
 
     def log_key(self, phase: str, metric: str, metric_postfix: str = None):
         metric_key = self.log_metrics[metric]
@@ -88,9 +88,6 @@ class ConfigurableLightningModule(L.LightningModule):
 
     def configure_criteria(self):
         return get_modules(nn, self.hparams.criterion)
-    
-    def get_criteria(self):
-        return self._criteria
     
     def configure_optimizers_only(self) -> List[optim.Optimizer]:
         opt_configs = self.hparams.optimizer if type(self.hparams.optimizer) is list else [self.hparams.optimizer]
