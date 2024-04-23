@@ -5,6 +5,7 @@
 ```bash
 git clone git@github.com:V0XNIHILI/torch-mate.git
 cd torch-mate
+# Make sure you have pip 23 or higher
 pip install -e .
 ```
 
