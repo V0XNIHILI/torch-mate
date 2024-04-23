@@ -12,6 +12,11 @@ from torch_mate.utils import get_class_and_init, get_modules
 
 
 class ConfigurableLightningModule(L.LightningModule):
+    log_separator = "/"
+    log_metrics = {}
+    log_phases = {"train": "train", "val": "val", "test": "test", "predict": "predict"}
+    log_order = "phase-metric" # or "metric-phase"
+
     def __init__(self, cfg: Dict):
         """Lightweight wrapper around PyTorch Lightning LightningModule that adds support for a configuration dictionary.
         Based on this configuration, it creates the model, criterion, optimizer, and scheduler. Overall, compared to the
@@ -42,6 +47,20 @@ class ConfigurableLightningModule(L.LightningModule):
 
         self._model = self.compile_model(self.configure_model())
         self._criteria = self.configure_criteria()
+
+    def log_key(self, phase: str, metric: str, metric_postfix: str = None):
+        metric_key = self.log_metrics[metric]
+        phase_key = self.log_phases[phase]
+
+        if metric_postfix:
+            metric_key += metric_postfix
+
+        if self.log_order == "phase-metric":
+            return f"{phase_key}{self.log_separator}{metric_key}"
+        elif self.log_order == "metric-phase":
+            return f"{metric_key}{self.log_separator}{phase_key}"
+        
+        raise ValueError(f"Invalid log order: {self.log_order}; must be either 'phase-metric' or 'metric-phase'")
 
     def configure_configuration(self, cfg: Dict):
         return cfg
