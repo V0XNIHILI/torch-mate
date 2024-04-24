@@ -91,9 +91,14 @@ cfg.seed = 4223747124
 # Specify the dataset and its configuration.
 # Without having any dots in the name, the import will be done from
 # the `torch_mate.lightning.datasets` module
-cfg.dataset.name = 'MNISTData'
+cfg.dataset.name = 'MagicData'
+cfg.dataset.cfg = DotMap({
+    "name": "MNIST", # Can also be torchvision.datasets.MNIST for example
+    "val_percentage": 0.1
+})
 cfg.dataset.kwargs = DotMap({
     "root": './data',
+    "download": True
 })
 
 # Specify the transforms and their configuration
