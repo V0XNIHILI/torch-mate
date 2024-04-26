@@ -1,5 +1,7 @@
 import random
 
+import tqdm
+
 from torch.utils.data import Dataset
 
 class Balanced(Dataset):
@@ -16,7 +18,7 @@ class Balanced(Dataset):
 
         self._indices_by_class = {}
 
-        for i, (_, label) in enumerate(dataset):
+        for i, (_, label) in tqdm(enumerate(dataset), total=len(dataset), desc="Balancing dataset"):
             if label not in self._indices_by_class:
                 self._indices_by_class[label] = []
             self._indices_by_class[label].append(i)
