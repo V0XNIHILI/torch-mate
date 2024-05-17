@@ -113,9 +113,17 @@ class ConfigurableLightningModule(L.LightningModule):
         optimizers = self.configure_optimizers_only()
         schedulers = self.configure_schedulers(optimizers)
       
+        # See [here](https://lightning.ai/docs/pytorch/stable/api/lightning.pytorch.core.LightningModule.html#lightning.pytorch.core.LightningModule.configure_optimizers)
+        # for return values allowed by Lightning
         if schedulers is None:
+            if len(optimizers) == 1:
+                return optimizers[0]
+            
             return optimizers
         
+        if len(optimizers) == 1 and len(schedulers) == 1:
+            return {"optimizer": optimizers[0], "lr_scheduler": schedulers[0]}
+
         return optimizers, schedulers
     
     def forward(self, x):
