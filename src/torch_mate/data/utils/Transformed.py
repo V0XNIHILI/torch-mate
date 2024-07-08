@@ -32,14 +32,29 @@ class Transformed(Dataset):
     def __getitem__(self, index: int):
         data = self.dataset[index]
 
-        if len(data) == 2:
-            X, y = data
+        has_target_transform = self.target_transform is not None
 
-            X = apply_if_not_none(self.transform, X)
-            y = apply_if_not_none(self.target_transform, y)
+        if type(data) is tuple or type(data) is list:
+            if len(data) == 2:
+                X, y = data
 
-            return X, y
-        elif self.target_transform is not None:
+                X = apply_if_not_none(self.transform, X)
+                y = apply_if_not_none(self.target_transform, y)
+
+                return X, y
+            if len(data) > 2 and has_target_transform:
+                Xs = data[:-1]
+                y = data[-1]
+
+                if self.transform is not None:
+                    for i in range(len(Xs)):
+                        Xs[i] = self.transform(Xs[i])
+
+                y = self.target_transform(y)
+
+                return Xs + [y]
+            
+        if has_target_transform:
             raise ValueError("Target transform provided but no target data found.")
 
         return apply_if_not_none(self.transform, data)
