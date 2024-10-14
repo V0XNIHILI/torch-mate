@@ -8,6 +8,7 @@ from torch_mate.data.utils.Transformed import Transformed
 from torch_mate.data.utils.Siamese import Siamese
 from torch_mate.data.utils.Triplet import Triplet
 from torch_mate.data.utils.Balanced import Balanced
+from torch_mate.data.utils.TransformedIterable import TransformedIterable
 
 __all__ = [
     "FewShot",
@@ -19,4 +20,5 @@ __all__ = [
     "Siamese",
     "Triplet",
     "Balanced",
+    "TransformedIterable"
 ]
