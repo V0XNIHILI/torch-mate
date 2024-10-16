@@ -15,11 +15,13 @@ class FewShot(IterableDataset):
                  n_way: int,
                  k_shot: int,
                  query_shots: int = -1,
+                 query_ways: int = -1,
                  support_query_split: Optional[Tuple[int, int]] = None,
                  samples_per_class: Optional[int] = None,
                  always_include_classes: Optional[List[int]] = None,
                  transform: Optional[Callable] = None,
-                 per_class_transform: Optional[Callable] = None):
+                 per_class_transform: Optional[Callable] = None,
+                 y_train_embeddings: Optional[torch.Tensor] = None):
         """Dataset for few shot learning.
 
         Example usage:
@@ -58,11 +60,14 @@ class FewShot(IterableDataset):
         self.n_way = n_way
         self.k_shot = k_shot
         self.query_shots = query_shots if query_shots != -1 else k_shot
+        self.query_ways = query_ways if query_ways != -1 else n_way
 
         self.always_include_classes = always_include_classes
 
         self.transform = transform
         self.per_class_transform = per_class_transform
+
+        self.y_train_embeddings = y_train_embeddings
 
         self.total_classes = len(self.indices_per_class)
         
@@ -92,6 +97,9 @@ class FewShot(IterableDataset):
                 )[:len(class_indices) - len(self.always_include_classes
                                             )] + self.always_include_classes
 
+            # get self.query_ways ints between 0 (inc.) and len(class_indices) (exc.)
+            test_class_indices = np.random.choice(len(class_indices), self.query_ways, replace=False)
+
             for i, class_index in enumerate(class_indices):
                 if self.support_query_split:
                     within_class_indices = np.concatenate([np.random.choice(self.indices_per_class[class_index][j], shot, replace=False) for j, shot in [(0, self.k_shot), (1, self.query_shots)]])
@@ -107,11 +115,13 @@ class FewShot(IterableDataset):
                 if self.per_class_transform is not None:
                     class_samples = self.per_class_transform(class_samples)
 
-                y_train_samples.extend([i] * self.k_shot)
+                y_train_embed = self.y_train_embeddings[class_index] if self.y_train_embeddings is not None else i
+                y_train_samples.extend([y_train_embed] * self.k_shot)
                 X_train_samples.extend(class_samples[:self.k_shot])
 
-                y_test_samples.extend([i] * self.query_shots)
-                X_test_samples.extend(class_samples[self.k_shot:])
+                if i in test_class_indices:
+                    y_test_samples.extend([i] * self.query_shots)
+                    X_test_samples.extend(class_samples[self.k_shot:])
 
             X_samples = torch.stack(X_train_samples + X_test_samples)
 
@@ -123,7 +133,7 @@ class FewShot(IterableDataset):
             X_test_samples = X_samples[num_train_samples:]
 
             out = ((X_train_samples,
-                    X_test_samples), (torch.tensor(y_train_samples),
+                    torch.tensor(y_train_samples)), (X_test_samples,
                                     torch.tensor(y_test_samples)))
 
             yield out
