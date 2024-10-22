@@ -20,8 +20,7 @@ class FewShot(IterableDataset):
                  samples_per_class: Optional[int] = None,
                  always_include_classes: Optional[List[int]] = None,
                  transform: Optional[Callable] = None,
-                 per_class_transform: Optional[Callable] = None,
-                 y_train_embeddings: Optional[torch.Tensor] = None):
+                 per_class_transform: Optional[Callable] = None):
         """Dataset for few shot learning.
 
         Example usage:
@@ -66,8 +65,6 @@ class FewShot(IterableDataset):
 
         self.transform = transform
         self.per_class_transform = per_class_transform
-
-        self.y_train_embeddings = y_train_embeddings
 
         self.total_classes = len(self.indices_per_class)
         
@@ -115,8 +112,7 @@ class FewShot(IterableDataset):
                 if self.per_class_transform is not None:
                     class_samples = self.per_class_transform(class_samples)
 
-                y_train_embed = self.y_train_embeddings[class_index] if self.y_train_embeddings is not None else i
-                y_train_samples.extend([y_train_embed] * self.k_shot)
+                y_train_samples.extend([i] * self.k_shot)
                 X_train_samples.extend(class_samples[:self.k_shot])
 
                 if i in test_class_indices:
