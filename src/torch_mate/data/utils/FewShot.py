@@ -20,7 +20,8 @@ class FewShot(IterableDataset):
                  samples_per_class: Optional[int] = None,
                  always_include_classes: Optional[List[int]] = None,
                  transform: Optional[Callable] = None,
-                 per_class_transform: Optional[Callable] = None):
+                 per_class_transform: Optional[Callable] = None,
+                 keep_original_labels: bool = False):
         """Dataset for few shot learning.
 
         Example usage:
@@ -70,6 +71,8 @@ class FewShot(IterableDataset):
         
         self.class_sampler = InfiniteClassSampler(list(self.indices_per_class.keys()), self.n_way)
 
+        self.keep_original_labels = keep_original_labels
+
     def infinite_generate(self):
         """Get a batch of samples for a k-shot n-way task.
 
@@ -106,17 +109,26 @@ class FewShot(IterableDataset):
                         self.k_shot + self.query_shots,
                         replace=False)
 
-                class_samples = torch.stack(
-                    [self.dataset[j][0] for j in within_class_indices])
+                Xs, ys = zip(*[self.dataset[j] for j in within_class_indices])
+
+                class_samples = torch.stack(Xs)
 
                 if self.per_class_transform is not None:
                     class_samples = self.per_class_transform(class_samples)
 
-                y_train_samples.extend([i] * self.k_shot)
+                if self.keep_original_labels:
+                    y_train_samples.extend(ys[:self.k_shot])
+                else:
+                    y_train_samples.extend([i] * self.k_shot)
+
                 X_train_samples.extend(class_samples[:self.k_shot])
 
                 if i in test_class_indices:
-                    y_test_samples.extend([i] * self.query_shots)
+                    if self.keep_original_labels:
+                        y_test_samples.extend(ys[self.k_shot:])
+                    else:
+                        y_test_samples.extend([i] * self.query_shots)
+
                     X_test_samples.extend(class_samples[self.k_shot:])
 
             X_samples = torch.stack(X_train_samples + X_test_samples)
