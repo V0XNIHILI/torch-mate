@@ -110,24 +110,20 @@ class FewShot(IterableDataset):
                         replace=False)
 
                 Xs, ys = zip(*[self.dataset[j] for j in within_class_indices])
+                original_label = ys[0]
+                new_label = original_label if self.keep_original_labels else i
 
                 class_samples = torch.stack(Xs)
 
                 if self.per_class_transform is not None:
                     class_samples = self.per_class_transform(class_samples)
 
-                if self.keep_original_labels:
-                    y_train_samples.extend(ys[:self.k_shot])
-                else:
-                    y_train_samples.extend([i] * self.k_shot)
+                y_train_samples.extend([new_label] * self.k_shot)
 
                 X_train_samples.extend(class_samples[:self.k_shot])
 
                 if i in test_class_indices:
-                    if self.keep_original_labels:
-                        y_test_samples.extend(ys[self.k_shot:])
-                    else:
-                        y_test_samples.extend([i] * self.query_shots)
+                    y_test_samples.extend([new_label] * self.query_shots)
 
                     X_test_samples.extend(class_samples[self.k_shot:])
 
