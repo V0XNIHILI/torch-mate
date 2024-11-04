@@ -1,4 +1,5 @@
 from typing import Callable, List, Optional, Tuple
+import random
 
 import numpy as np
 
@@ -21,7 +22,8 @@ class FewShot(IterableDataset):
                  always_include_classes: Optional[List[int]] = None,
                  transform: Optional[Callable] = None,
                  per_class_transform: Optional[Callable] = None,
-                 keep_original_labels: bool = False):
+                 keep_original_labels: bool = False,
+                 shuffle_labels: bool = False):
         """Dataset for few shot learning.
 
         Example usage:
@@ -72,6 +74,7 @@ class FewShot(IterableDataset):
         self.class_sampler = InfiniteClassSampler(list(self.indices_per_class.keys()), self.n_way)
 
         self.keep_original_labels = keep_original_labels
+        self.shuffle_labels = shuffle_labels
 
     def infinite_generate(self):
         """Get a batch of samples for a k-shot n-way task.
@@ -100,7 +103,14 @@ class FewShot(IterableDataset):
             # get self.query_ways ints between 0 (inc.) and len(class_indices) (exc.)
             test_class_indices = np.random.choice(len(class_indices), self.query_ways, replace=False)
 
-            for i, class_index in enumerate(class_indices):
+            out_indices = list(range(len(class_indices)))
+
+            if self.shuffle_labels:
+                assert self.keep_original_labels == False, "Cannot shuffle labels if keep_original_labels is True."
+
+                random.shuffle(out_indices)
+
+            for i, class_index in zip(out_indices, class_indices):
                 if self.support_query_split:
                     within_class_indices = np.concatenate([np.random.choice(self.indices_per_class[class_index][j], shot, replace=False) for j, shot in [(0, self.k_shot), (1, self.query_shots)]])
                 else:
