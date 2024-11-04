@@ -8,6 +8,7 @@ from torch_mate.data.transforms.DiscreteRandomRotation import \
 from torch_mate.data.transforms.TimeShift import TimeShift
 from torch_mate.data.transforms.RandomResample import RandomResample
 from torch_mate.data.transforms.RandomVolume import RandomVolume
+from torch_mate.data.transforms.PermuteSequence import PermuteSequence
 
 __all__ = [
     "AddNoise",
@@ -17,4 +18,5 @@ __all__ = [
     "TimeShift",
     "RandomResample",
     "RandomVolume",
+    "PermuteSequence"
 ]
