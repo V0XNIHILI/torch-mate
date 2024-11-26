@@ -6,7 +6,7 @@ def calc_accuracy(predictions: torch.Tensor, targets: torch.Tensor, k: int = 1) 
 
     Args:
         predictions (torch.Tensor): Predictions. Shape: (batch_size, num_classes)
-        targets (torch.Tensor): Targets. Shape: (batch_size)
+        targets (torch.Tensor): Targets. Shape: (batch_size,) or (batch_size, num_classes)
         k (int, optional): Top-k accuracy. Defaults to 1.
 
     Returns:
@@ -14,6 +14,10 @@ def calc_accuracy(predictions: torch.Tensor, targets: torch.Tensor, k: int = 1) 
     """
 
     _, top_k_indices = predictions.topk(k, dim=1)
-    repeated_targets = targets.repeat(k, 1).t()
 
-    return (top_k_indices == repeated_targets).sum().float() / targets.size(0)
+    if len(targets.size()) == 2:
+        targets = targets.argmax(dim=1)
+    else:
+        targets = targets.repeat(k, 1).t()
+
+    return (top_k_indices == targets).sum().float() / targets.size(0)
