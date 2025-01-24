@@ -15,8 +15,10 @@ def calc_accuracy(predictions: torch.Tensor, targets: torch.Tensor, k: int = 1) 
 
     _, top_k_indices = predictions.topk(k, dim=1)
 
+    # If the targets are one-hot encoded, convert them to labels
     if len(targets.size()) == 2:
         targets = targets.argmax(dim=1)
+        top_k_indices = top_k_indices.flatten()
     else:
         targets = targets.repeat(k, 1).t()
 
