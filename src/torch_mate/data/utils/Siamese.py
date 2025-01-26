@@ -6,11 +6,13 @@ from torch.utils.data import Dataset
 from torch_mate.data.utils.Triplet import Triplet
 
 class Siamese(Triplet):
-    def __init__(self, dataset: Dataset):
+    def __init__(self, dataset: Dataset, same_prob: float = 0.5):
         super().__init__(dataset)
 
+        self.same_prob = same_prob
+
     def generate(self):
-        same_label = random.random() < 0.5
+        same_label = random.random() < self.same_prob
 
         samples, _ = super().generate()
 
@@ -19,4 +21,4 @@ class Siamese(Triplet):
         else:
             samples = samples[0::2]
         
-        return samples, torch.tensor([same_label]).float()
+        return samples, same_label
