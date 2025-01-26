@@ -21,7 +21,7 @@ class Triplet(IterableDataset):
         indices = [random.choice(self.indices_per_class[labels[0]])] + \
             [random.choice(self.indices_per_class[label]) for label in labels]
 
-        return tuple(map(lambda index: self.dataset[index][0], indices)), labels[0]
+        return list(map(lambda index: self.dataset[index][0], indices)) + labels
     
     def infinite_generate(self):
         while True:
