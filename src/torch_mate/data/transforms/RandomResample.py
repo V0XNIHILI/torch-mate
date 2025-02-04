@@ -3,7 +3,7 @@ from typing import List
 import random
 
 import torch
-from torchaudio.transforms import Resampler
+from torchaudio.transforms import Resample
 
 
 class RandomResample:
@@ -11,7 +11,7 @@ class RandomResample:
         self.orig_freq = orig_freq
         self.resample_rates = resample_rates
         
-        self.resamplers = [Resampler(orig_freq, orig_freq*resample_rate) for resample_rate in resample_rates]
+        self.resamplers = [Resample(orig_freq, orig_freq*resample_rate) for resample_rate in resample_rates]
 
     def __call__(self, waveform: torch.Tensor) -> torch.Tensor:
         resample = random.choice(self.resamplers)
