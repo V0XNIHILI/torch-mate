@@ -30,6 +30,8 @@ class AddNoise:
     def __call__(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
         noise_level = random.random() * self.max_noise_level
 
+        # Clipping per: https://github.com/tensorflow/tensorflow/blob/6e19bfed25b62e8c2ea56edcbd910503325c39c7/tensorflow/examples/speech_commands/input_data.py#L422
+
         # https://github.com/castorini/honk/blob/c3aae750c428520ba340961bddd526f9c999bb93/utils/model.py#L301
         if not y in self.noise_class_indices:
             if random.random() < self.p:
