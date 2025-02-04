@@ -12,7 +12,7 @@ class SPEECHCOMMANDS_35C(SPEECHCOMMANDS):
                 subset: Optional[str] = None,
                 return_int_targets: bool = True,
                 transform: Union[Callable, None] = None,
-                target_transform: Optional[Callable[Union[Tuple[int, str, str, int], int], Any]] = None) -> None:
+                target_transform: Optional[Callable[[Union[Tuple[int, str, str, int], int]], Any]] = None) -> None:
         """Google Speech Commands V2 dataset with 35 classes. For the 12-class variant, use:
         https://github.com/KinWaiCheuk/AudioLoader/blob/master/AudioLoader/speech/speechcommands.py
 
