@@ -1,19 +1,21 @@
-from typing import Tuple
+from typing import List
 
 import random
 
 import torch
-from torchaudio.functional import resample
+from torchaudio.transforms import Resampler
 
 
 class RandomResample:
-    def __init__(self, orig_freq: int, resample_range: Tuple[int, int]):
+    def __init__(self, orig_freq: int, resample_rates: List[float]):
         self.orig_freq = orig_freq
-        self.resample_range = resample_range
+        self.resample_rates = resample_rates
+        
+        self.resamplers = [Resampler(orig_freq, orig_freq*resample_rate) for resample_rate in resample_rates]
 
     def __call__(self, waveform: torch.Tensor) -> torch.Tensor:
-        new_sample_freq = random.randint(*self.resample_range)
-        resampled_waveform = resample(waveform, self.orig_freq, new_sample_freq)
+        resample = random.choice(self.resamplers)
+        resampled_waveform = resample(waveform)
 
         # Pad with zeros at the start if the resampled waveform is shorter,
         # otherwise, cut the waveform

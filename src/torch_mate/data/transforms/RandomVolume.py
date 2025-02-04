@@ -4,6 +4,7 @@ import torch
 
 from typing import Optional
 
+
 class RandomVolume:
     def __init__(self, base_volume: float = 1.0, offset: Optional[float] = None):
         self.base_volume = base_volume
