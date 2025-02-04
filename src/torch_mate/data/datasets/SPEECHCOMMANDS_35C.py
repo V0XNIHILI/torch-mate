@@ -1,4 +1,3 @@
-from torch import Tensor
 import torch
 from torchaudio.datasets import SPEECHCOMMANDS
 
