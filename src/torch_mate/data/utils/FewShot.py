@@ -9,6 +9,7 @@ from torch.utils.data import Dataset, IterableDataset
 from torch_mate.data.samplers import InfiniteClassSampler
 from torch_mate.data.utils.get_indices_per_class import get_indices_per_class
 
+
 class FewShot(IterableDataset):
 
     def __init__(self,
