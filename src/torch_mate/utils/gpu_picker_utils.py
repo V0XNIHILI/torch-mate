@@ -31,7 +31,7 @@ def sort_gpus_by_memory_usage(limit_gpu_ids: Optional[list] = None):
     gpu_memory_usage = get_gpu_memory_usage()
 
     if gpu_memory_usage is None:
-        return None
+        raise RuntimeError("nvidia-smi command failed or no GPUs available.")
     
     sorted_gpus = sorted(gpu_memory_usage, key=lambda x: x[1])
     sorted_gpu_ids = [gpu[0] for gpu in sorted_gpus]
