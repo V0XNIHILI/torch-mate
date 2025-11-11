@@ -21,7 +21,9 @@ def get_indices_per_class(dataset: Dataset,
     indices_per_class = {}
 
     if not samples_per_class:
-        for i, (_, label) in tqdm(enumerate(dataset), total=len(dataset), desc="Getting indices per class"):
+        for i, entry in tqdm(enumerate(dataset), total=len(dataset), desc="Getting indices per class"):
+            label = entry[-1]
+
             if not isinstance(label, int):
                 label = label.item()
 
@@ -35,11 +37,11 @@ def get_indices_per_class(dataset: Dataset,
         for i in range(num_classes):
             if samples_per_class > 0:
                 # Order is: [class0sample0, class0sample1, ..., class0sampleN, class1sample0, class1sample1, ..., class1sampleN, ...]
-                _, label = dataset[i*samples_per_class]
+                label = dataset[i*samples_per_class][-1]
                 indices_per_class[label] = list(range(i * samples_per_class, (i + 1) * samples_per_class))
             else:
                 # Order is: [class0sample0, class1sample0, ..., classNsample0, class0sample1, class1sample1, ..., classNsample1, ...]
-                _, label = dataset[i]
+                label = dataset[i][-1]
                 indices_per_class[label] = [j for j in range(i, len(dataset), num_classes)]
 
     if support_query_split is not None:

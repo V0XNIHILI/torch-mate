@@ -120,13 +120,14 @@ class FewShot(IterableDataset):
                         self.k_shot + self.query_shots,
                         replace=False)
 
-                Xs, ys = zip(*[self.dataset[j] for j in within_class_indices])
+                entries = list(zip(*[self.dataset[j] for j in within_class_indices]))
+                class_samples = entries[0]
+                ys = entries[-1]
                 original_label = ys[0]
                 new_label = original_label if self.keep_original_labels else i
 
-                class_samples = torch.stack(Xs)
-
                 if self.per_class_transform is not None:
+                    class_samples = torch.stack(class_samples)
                     class_samples = self.per_class_transform(class_samples)
 
                 y_train_samples.extend([new_label] * self.k_shot)
@@ -138,14 +139,16 @@ class FewShot(IterableDataset):
 
                     X_test_samples.extend(class_samples[self.k_shot:])
 
-            X_samples = torch.stack(X_train_samples + X_test_samples)
-
             if self.transform is not None:
+                X_samples = torch.stack(X_train_samples + X_test_samples)
                 X_samples = self.transform(X_samples)
 
-            num_train_samples = len(y_train_samples)
-            X_train_samples = X_samples[:num_train_samples]
-            X_test_samples = X_samples[num_train_samples:]
+                num_train_samples = len(y_train_samples)
+                X_train_samples = X_samples[:num_train_samples]
+                X_test_samples = X_samples[num_train_samples:]
+            else:
+                X_train_samples = torch.tensor(X_train_samples)
+                X_test_samples = torch.tensor(X_test_samples)
 
             out = ((X_train_samples,
                     torch.tensor(y_train_samples)), (X_test_samples,
