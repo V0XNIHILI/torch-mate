@@ -34,6 +34,8 @@ class FewShot(IterableDataset):
         >>> # N + M way, K shot learning (https://arxiv.org/abs/1812.10233)
         >>> dataset = FewShot(dataset, n_way=12, k_shot=1, always_include_classes=[0, 1]) # 10 + 2 way 1 shot learning
 
+        Zero-shot dataset generation is also supported if your dataset is structured like [sample1, sample2, ..., sampleN] where each sample is a tuple of (zero_shot_data, few_shot_data, label).
+
         Args:
             dataset (Dataset): The dataset to use. Labels should be integers or torch Scalars.
             n_way (int): Number of classes in the query and query set.
@@ -122,8 +124,8 @@ class FewShot(IterableDataset):
 
                 entries = list(zip(*[self.dataset[j] for j in within_class_indices]))
                 class_samples = entries[0]
-                ys = entries[-1]
-                original_label = ys[0]
+
+                original_label = entries[-1][0]
                 new_label = original_label if self.keep_original_labels else i
 
                 if self.per_class_transform is not None:
@@ -137,7 +139,10 @@ class FewShot(IterableDataset):
                 if i in test_class_indices:
                     y_test_samples.extend([new_label] * self.query_shots)
 
-                    X_test_samples.extend(class_samples[self.k_shot:])
+                    # For datasets that return (train_zero_shot_data, test_few_shot_dadta, y)
+                    samples_for_testing = entries[1] if len(entries) == 3 else class_samples
+
+                    X_test_samples.extend(samples_for_testing[self.k_shot:])
 
             if self.transform is not None:
                 X_samples = torch.stack(X_train_samples + X_test_samples)
@@ -147,8 +152,8 @@ class FewShot(IterableDataset):
                 X_train_samples = X_samples[:num_train_samples]
                 X_test_samples = X_samples[num_train_samples:]
             else:
-                X_train_samples = torch.tensor(X_train_samples)
-                X_test_samples = torch.tensor(X_test_samples)
+                X_train_samples = torch.stack(X_train_samples)
+                X_test_samples = torch.stack(X_test_samples)
 
             out = ((X_train_samples,
                     torch.tensor(y_train_samples)), (X_test_samples,
