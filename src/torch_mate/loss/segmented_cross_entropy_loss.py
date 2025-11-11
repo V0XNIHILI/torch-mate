@@ -26,6 +26,7 @@ class SegmentedCrossEntropyLoss(nn.Module):
         self.loss_fn = nn.CrossEntropyLoss(**(ce_kwargs or {}))
 
     def forward(self, logits: torch.Tensor, targets: torch.Tensor):
+        # targets: list/tuple of length len(segments), each of shape (batch_size,)
         total_loss = 0.0
         start = 0
 
@@ -33,7 +34,7 @@ class SegmentedCrossEntropyLoss(nn.Module):
             end = start + seg_len
 
             seg_logits = logits[:, start:end]
-            seg_loss = self.loss_fn(seg_logits, targets[:, i])
+            seg_loss = self.loss_fn(seg_logits, targets[i])
             total_loss += seg_loss.mean()
 
             start = end

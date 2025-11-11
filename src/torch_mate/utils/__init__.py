@@ -10,3 +10,4 @@ from .get_class import get_class
 from .get_class_and_init import get_class_and_init
 from .get_modules import get_modules
 from .configure_cuda import configure_cuda
+from .segmented_accuracy import SegmentedAccuracy
