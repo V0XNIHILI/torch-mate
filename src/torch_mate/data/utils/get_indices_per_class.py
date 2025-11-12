@@ -4,9 +4,10 @@ from torch.utils.data import Dataset
 
 from tqdm import tqdm
 
+
 def get_indices_per_class(dataset: Dataset,
                           support_query_split: Optional[Tuple[int, int]] = None,
-                          samples_per_class: Optional[int] = None) -> Union[Dict[int, List[int]], Dict[int, Tuple[List[int], List[int]]]]:
+                          samples_per_class: Optional[Union[int, str]] = None) -> Union[Dict[int, List[int]], Dict[int, Tuple[List[int], List[int]]]]:
     """Retrieve the indices per class in a dataset.
 
     Args:
@@ -20,17 +21,24 @@ def get_indices_per_class(dataset: Dataset,
 
     indices_per_class = {}
 
-    if not samples_per_class:
-        for i, entry in tqdm(enumerate(dataset), total=len(dataset), desc="Getting indices per class"):
-            label = entry[-1]
+    # if samples per class is not an integer
+    if not isinstance(samples_per_class, int):
+        if samples_per_class is None:
+            for i, entry in tqdm(enumerate(dataset), total=len(dataset), desc="Getting indices per class"):
+                label = entry[-1]
 
-            if not isinstance(label, int):
-                label = label.item()
+                if not isinstance(label, int):
+                    label = label.item()
 
-            if label not in indices_per_class:
-                indices_per_class[label] = []
+                if label not in indices_per_class:
+                    indices_per_class[label] = []
 
-            indices_per_class[label].append(i)
+                indices_per_class[label].append(i)
+        else:
+            import pickle
+
+            with open(samples_per_class, "rb") as f:
+                indices_per_class = pickle.load(f)
     else:
         num_classes = len(dataset) // abs(samples_per_class)
 
