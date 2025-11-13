@@ -1,4 +1,4 @@
-from typing import Callable, List, Optional, Tuple
+from typing import Callable, Dict, List, Optional, Tuple, Union
 import random
 
 import numpy as np
@@ -19,7 +19,7 @@ class FewShot(IterableDataset):
                  query_shots: int = -1,
                  query_ways: int = -1,
                  support_query_split: Optional[Tuple[int, int]] = None,
-                 samples_per_class: Optional[int] = None,
+                 samples_per_class: Optional[Union[int, str, Dict[int, List[int]]]] = None,
                  always_include_classes: Optional[List[int]] = None,
                  transform: Optional[Callable] = None,
                  per_class_transform: Optional[Callable] = None,
@@ -57,7 +57,11 @@ class FewShot(IterableDataset):
 
         self.dataset = dataset
         self.support_query_split = support_query_split
-        self.indices_per_class = get_indices_per_class(self.dataset, self.support_query_split, samples_per_class)
+
+        if isinstance(samples_per_class, dict):
+            self.indices_per_class = samples_per_class
+        else:
+            self.indices_per_class = get_indices_per_class(self.dataset, self.support_query_split, samples_per_class)
 
         if len(self.indices_per_class) < n_way:
             raise ValueError("The dataset does not have enough classes to create a batch of size n_way.")
