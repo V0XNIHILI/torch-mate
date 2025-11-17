@@ -1,9 +1,10 @@
+from typing import List
 import torch
 import torch.nn as nn
 
 
 class NormalizeSequence(nn.Module):
-    def __init__(self, mean, std):
+    def __init__(self, mean: List[float], std: List[float]):
         super().__init__()
 
         # Reshape to (num_channels, 1) to allow broadcasting
