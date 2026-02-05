@@ -21,7 +21,7 @@ def log_stablemax(x, dim=-1):
 
 
 class StableMaxCrossEntropy(nn.Module):
-    def __init__(self, reduction: Literal["sum", "mean"], ignore_index: int = -100) -> None:
+    def __init__(self, reduction: Literal["sum", "mean"] = "mean", ignore_index: int = -100) -> None:
         super().__init__()
         self.reduction = reduction
         self.ignore_index = ignore_index
