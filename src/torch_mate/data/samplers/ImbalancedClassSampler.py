@@ -2,6 +2,8 @@ import torch
 from torch.utils.data import Dataset
 from torch.utils.data.sampler import WeightedRandomSampler
 
+from tqdm import tqdm
+
 
 class ImbalancedClassSampler(WeightedRandomSampler):
 
@@ -17,7 +19,7 @@ class ImbalancedClassSampler(WeightedRandomSampler):
             replacement (bool, optional): Whether to sample classes with replacement. Defaults to True.
         """
 
-        labels = torch.tensor([label for _, label in dataset])
+        labels = torch.tensor([label for _, label in tqdm(dataset, desc="Extracting labels for balanced sampling")])
 
         class_count = torch.bincount(labels.squeeze())
         class_weighting = 1. / class_count
