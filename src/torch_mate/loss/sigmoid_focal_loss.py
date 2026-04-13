@@ -5,6 +5,9 @@ from torchvision.ops import sigmoid_focal_loss
 
 
 class SigmoidFocalLoss(nn.Module):
+    """Loss used in RetinaNet for dense detection: https://arxiv.org/abs/1708.02002.
+    Useful for multi-label classification tasks with (high) class imbalance."""
+
     def __init__(self, alpha: float = 0.25, gamma: float = 2, reduction: str = 'mean'):
         super().__init__()
         self.alpha = alpha
