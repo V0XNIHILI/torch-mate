@@ -1,6 +1,12 @@
-from torch_mate.data.samplers.ImbalancedClassSampler import \
+from torch_mate.data.samplers.imbalanced_class_sampler import \
     ImbalancedClassSampler
-from torch_mate.data.samplers.InfiniteClassSampler import \
+from torch_mate.data.samplers.infinite_class_sampler import \
     InfiniteClassSampler
 
-from torch_mate.data.samplers.DataSampler import DataSampler
+from torch_mate.data.samplers.data_sampler import DataSampler
+
+__all__ = [
+    "ImbalancedClassSampler",
+    "InfiniteClassSampler",
+    "DataSampler",
+]

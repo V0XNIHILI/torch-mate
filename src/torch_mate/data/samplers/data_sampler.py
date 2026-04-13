@@ -1,7 +1,7 @@
-import random
-from typing import List, Sized
+from typing import Sized
 
 from torch.utils.data import Sampler
+
 
 class DataSampler(Sampler):
 
