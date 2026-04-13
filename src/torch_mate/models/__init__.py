@@ -1,5 +1,5 @@
 from .classification_rnns import ClassificationLSTM, ClassificationGRU, ClassificationRNN
-from .LeNet5BNMaxPool import LeNet5BNMaxPool
+from .le_net5_bn_max_pool import LeNet5BNMaxPool
 
 __all__ = [
     "ClassificationLSTM",
