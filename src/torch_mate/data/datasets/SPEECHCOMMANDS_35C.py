@@ -4,6 +4,7 @@ from torchaudio.datasets import SPEECHCOMMANDS
 from typing import Union, Optional, Callable, Any, Tuple
 from pathlib import Path
 
+
 class SPEECHCOMMANDS_35C(SPEECHCOMMANDS):
     def __init__(self,
                 root: Union[str, Path],
