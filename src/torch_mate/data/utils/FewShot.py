@@ -4,7 +4,7 @@ import random
 import numpy as np
 
 import torch
-from torch.utils.data import Dataset, IterableDataset
+from torch.utils.data import Dataset, IterableDataset, get_worker_info
 
 from torch_mate.data.samplers import InfiniteClassSampler
 from torch_mate.data.utils.get_indices_per_class import get_indices_per_class
@@ -24,7 +24,8 @@ class FewShot(IterableDataset):
                  transform: Optional[Callable] = None,
                  per_class_transform: Optional[Callable] = None,
                  keep_original_labels: bool = False,
-                 shuffle_labels: bool = False):
+                 shuffle_labels: bool = False,
+                 seed: Optional[int] = None):
         """Dataset for few shot learning.
 
         Example usage:
@@ -46,6 +47,7 @@ class FewShot(IterableDataset):
             always_include_classes (Optional[List[int]], optional): List of classes to always include in both in the support and query set. Defaults to None.
             transform (Optional[Callable], optional): Transform applied to every data sample. Will be reapplied every time a batch is served. Defaults to None.
             per_class_transform (Optional[Callable], optional): Transform applied to every data sample. Will be applied to every class separately. Defaults to None.
+            seed (Optional[int], optional): If set, resets all local RNGs to this seed on every __iter__ call, guaranteeing identical batches every validation run without affecting global RNG state. Defaults to None.
         """
 
         if always_include_classes is not None:
@@ -77,20 +79,21 @@ class FewShot(IterableDataset):
         self.per_class_transform = per_class_transform
 
         self.total_classes = len(self.indices_per_class)
-        
-        self.class_sampler = InfiniteClassSampler(list(self.indices_per_class.keys()), self.n_way)
 
         self.keep_original_labels = keep_original_labels
         self.shuffle_labels = shuffle_labels
+        self.seed = seed
 
-    def infinite_generate(self):
+        self._indices_in_ds = list(self.indices_per_class.keys())
+
+    def infinite_generate(self, rng_np: np.random.Generator, rng_py: random.Random, class_sampler: InfiniteClassSampler):
         """Get a batch of samples for a k-shot n-way task.
 
         Yields:
             tuple[tuple[Tensor, Tensor], tuple[Tensor, Tensor]]: The support and query sets in the form of ((X_support, X_query), (y_support, y_query))
         """
 
-        for new_class_indices in self.class_sampler:
+        for new_class_indices in class_sampler:
             X_train_samples = []
             X_test_samples = []
 
@@ -100,7 +103,7 @@ class FewShot(IterableDataset):
             class_indices = new_class_indices
 
             if self.always_include_classes is not None:
-                # This line also makes sure that the always include classes are always
+                # These lines also makes sure that the always include classes are always
                 # in the same position in the batch
                 class_indices = list(
                     set(class_indices) - set(self.always_include_classes)
@@ -108,20 +111,19 @@ class FewShot(IterableDataset):
                                             )] + self.always_include_classes
 
             # get self.query_ways ints between 0 (inc.) and len(class_indices) (exc.)
-            test_class_indices = np.random.choice(len(class_indices), self.query_ways, replace=False)
+            test_class_indices = rng_np.choice(len(class_indices), self.query_ways, replace=False)
 
             out_indices = list(range(len(class_indices)))
 
             if self.shuffle_labels:
                 assert self.keep_original_labels == False, "Cannot shuffle labels if keep_original_labels is True."
-
-                random.shuffle(out_indices)
+                rng_py.shuffle(out_indices)
 
             for i, class_index in zip(out_indices, class_indices):
                 if self.support_query_split:
-                    within_class_indices = np.concatenate([np.random.choice(self.indices_per_class[class_index][j], shot, replace=False) for j, shot in [(0, self.k_shot), (1, self.query_shots)]])
+                    within_class_indices = np.concatenate([rng_np.choice(self.indices_per_class[class_index][j], shot, replace=False) for j, shot in [(0, self.k_shot), (1, self.query_shots)]])
                 else:
-                    within_class_indices = np.random.choice(
+                    within_class_indices = rng_np.choice(
                         self.indices_per_class[class_index],
                         self.k_shot + self.query_shots,
                         replace=False)
@@ -137,13 +139,12 @@ class FewShot(IterableDataset):
                     class_samples = self.per_class_transform(class_samples)
 
                 y_train_samples.extend([new_label] * self.k_shot)
-
                 X_train_samples.extend(class_samples[:self.k_shot])
 
                 if i in test_class_indices:
                     y_test_samples.extend([new_label] * self.query_shots)
 
-                    # For datasets that return (train_zero_shot_data, test_few_shot_dadta, y)
+                    # For datasets that return (train_zero_shot_data, test_few_shot_data, y)
                     samples_for_testing = entries[1] if len(entries) == 3 else class_samples
 
                     X_test_samples.extend(samples_for_testing[self.k_shot:])
@@ -166,4 +167,16 @@ class FewShot(IterableDataset):
             yield out
 
     def __iter__(self):
-        return iter(self.infinite_generate())
+        seed = self.seed
+
+        worker_info = get_worker_info()
+
+        if worker_info is not None and seed is not None:
+            # Each worker gets a unique but deterministic seed offset
+            seed = seed + worker_info.id
+
+        rng_np = np.random.default_rng(seed)
+        rng_py = random.Random(seed)
+        class_sampler = InfiniteClassSampler(self._indices_in_ds, self.n_way, seed=seed)
+
+        return iter(self.infinite_generate(rng_np, rng_py, class_sampler))
