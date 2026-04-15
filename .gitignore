@@ -16,6 +16,10 @@ data
 !src/torch_mate/data
 /datasets
 
+# VS Code
+
+.vscode
+
 # macOS
 
 .DS_Store
