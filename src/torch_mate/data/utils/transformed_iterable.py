@@ -1,4 +1,4 @@
-from .Transformed import apply_if_not_none
+from .transformed import apply_if_not_none
 
 from typing import Callable, Optional, Iterator
 from torch.utils.data import IterableDataset

@@ -4,6 +4,7 @@ from torch.utils.data import Dataset, IterableDataset
 
 from torch_mate.data.utils.get_indices_per_class import get_indices_per_class
 
+
 class Triplet(IterableDataset):
     def __init__(self, dataset: Dataset):
         super(Triplet).__init__()

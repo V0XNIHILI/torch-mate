@@ -1,6 +1,5 @@
 import random
 
-import torch
 from torch.utils.data import Dataset
 
 from torch_mate.data.utils.triplet import Triplet
