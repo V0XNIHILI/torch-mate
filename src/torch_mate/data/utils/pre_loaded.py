@@ -3,7 +3,7 @@ from typing import Callable, Optional
 from torch.utils.data import Dataset
 from tqdm import tqdm
 
-from torch_mate.data.utils.Transformed import Transformed
+from torch_mate.data.utils.transformed import Transformed
 
 
 class PreLoaded(Transformed):

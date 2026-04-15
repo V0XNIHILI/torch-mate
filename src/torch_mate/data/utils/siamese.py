@@ -3,7 +3,7 @@ import random
 import torch
 from torch.utils.data import Dataset
 
-from torch_mate.data.utils.Triplet import Triplet
+from torch_mate.data.utils.triplet import Triplet
 
 class Siamese(Triplet):
     def __init__(self, dataset: Dataset, same_prob: float = 0.5):
