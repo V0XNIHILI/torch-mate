@@ -2,16 +2,18 @@ from torch_mate.data.utils import Siamese
 
 from test_triplet import LabelsAreData
 
+
 ITERS = 1000
 
+
 def test_siamese():
-    data = LabelsAreData([1, 2, 3, 4], 1000)
+    data = LabelsAreData([1, 2, 3, 4], ITERS)
 
     siamese = Siamese(data)
 
-    # Get 100 batches
+    # Get ITERS num batches
     for i, batch in enumerate(siamese):
-        if i >= 1000:
+        if i >= ITERS:
             break
         
         assert len(batch) == 2, "Siamese should have 2 items"

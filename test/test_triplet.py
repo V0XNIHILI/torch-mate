@@ -2,14 +2,16 @@ from torch_mate.data.utils import Triplet
 
 from utils import LabelsAreData
 
+
 ITERS = 1000
 
+
 def test_triplet():
-    data = LabelsAreData([1, 2, 3, 4], 1000)
+    data = LabelsAreData([1, 2, 3, 4], ITERS)
 
     triplet = Triplet(data)
 
-    # Get 100 batches
+    # Get ITERS num batches
     for i, batch in enumerate(triplet):
         if i >= ITERS:
             break

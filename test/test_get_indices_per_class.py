@@ -2,9 +2,11 @@ from torch_mate.data.utils.get_indices_per_class import get_indices_per_class
 
 from utils import LabelsAreData
 
+
 SAMPLES_PER_CLASS = 100
 LABELS = [0,1,2,3,4,5]
 LENGTH = len(LABELS) * SAMPLES_PER_CLASS
+
 
 def test_get_indices_per_class():
     data = LabelsAreData(LABELS, LENGTH)

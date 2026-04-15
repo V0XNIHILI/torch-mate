@@ -4,10 +4,12 @@ from torch_mate.data.utils import FewShot
 
 from test_triplet import LabelsAreData
 
+
 ITERS = 1000
 N_WAY = 5
 K_SHOT = 2
 K_QUERY = 3
+
 
 def test_few_shot():
     data = LabelsAreData(list(range(100)), 1000)
@@ -17,9 +19,9 @@ def test_few_shot():
 
         always_include_class_mapping = None
 
-        # Get 100 batches
+        # Get ITERS num batches
         for i, batch in enumerate(few_shot):
-            if i >= 1000:
+            if i >= ITERS:
                 break
 
             ((X_train, X_test), (y_train, y_test)) = batch
