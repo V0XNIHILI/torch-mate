@@ -1,3 +1,5 @@
+from typing import Optional
+
 import torch
 from torch.utils.data import Dataset
 from torch.utils.data.sampler import WeightedRandomSampler
@@ -9,7 +11,7 @@ class ImbalancedClassSampler(WeightedRandomSampler):
 
     def __init__(self,
                  dataset: Dataset,
-                 length: int,
+                 length: Optional[int] = None,
                  replacement: bool = True):
         """Sampler that samples all classes in a balanced fashion when the number of samples per classes are not evenly distributed.
 
@@ -24,5 +26,8 @@ class ImbalancedClassSampler(WeightedRandomSampler):
         class_count = torch.bincount(labels.squeeze())
         class_weighting = 1. / class_count
         sample_weights = class_weighting[labels]
+
+        if length is None:
+            length = len(dataset)
 
         super().__init__(sample_weights, length, replacement=replacement)
