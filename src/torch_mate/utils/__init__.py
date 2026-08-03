@@ -1,4 +1,5 @@
 from .calc_accuracy import calc_accuracy
+from .calc_binary_accuracy import calc_binary_accuracy
 from .iterate_to_device import iterate_to_device
 from .tuples_to_device import nested_tuple_to_device
 from .count_parameters import count_parameters
@@ -11,3 +12,20 @@ from .get_class_and_init import get_class_and_init
 from .get_modules import get_modules
 from .configure_cuda import configure_cuda
 from .segmented_accuracy import SegmentedAccuracy
+
+__all__ = [
+    "calc_accuracy",
+    "calc_binary_accuracy",
+    "iterate_to_device",
+    "nested_tuple_to_device",
+    "count_parameters",
+    "get_device",
+    "disable_torch_debug_apis",
+    "set_seeds",
+    "get_pin_memory",
+    "get_class",
+    "get_class_and_init",
+    "get_modules",
+    "configure_cuda",
+    "SegmentedAccuracy",
+]
